@@ -54,8 +54,9 @@ kbd{font-family:var(--mono);font-size:10.5px;border:1px solid var(--line2);borde
 .cell.g .v{color:var(--green)}
 .cell.wide{grid-column:span 2}
 @keyframes blink{50%{background:#f7bcbc}}
-#chips{position:absolute;left:50%;top:10px;transform:translateX(-50%);display:flex;gap:6px;flex-wrap:wrap;justify-content:center;max-width:46%}
+#chips{position:absolute;left:50%;top:10px;transform:translateX(-50%);display:flex;gap:6px;flex-wrap:wrap;justify-content:center;max-width:46%;pointer-events:none}#chips .cams{pointer-events:auto}
 .chip{background:rgba(251,252,253,.92);border:1px solid var(--ink);padding:2px 9px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;border-radius:2px;white-space:nowrap}
+.chip.cams{padding:1px 4px 1px 9px}.chip.cams button{font:inherit;letter-spacing:inherit;text-transform:inherit;margin-left:3px;padding:1px 6px;border:1px solid var(--ink);background:#fff;color:var(--ink);border-radius:2px;cursor:pointer}.chip.cams button.on{background:var(--ink);color:#fff}.chip.cams button:disabled{opacity:.4;cursor:not-allowed}
 .chip b{color:var(--blue)} .chip.p{background:var(--ink);color:#fff;border-color:var(--ink)} .chip.p b{color:#ffd166}
 #alerts{position:absolute;left:50%;top:48px;transform:translateX(-50%);display:flex;flex-direction:column;gap:4px;align-items:center;max-width:46%;pointer-events:none}
 .al{font-weight:700;font-size:12.5px;letter-spacing:.04em;padding:4px 12px;border:1px solid;border-radius:2px;background:rgba(255,255,255,.95)}
@@ -3008,10 +3009,11 @@ function keysPanel(){ var _t=$('tbChute'); if(_t) _t.style.display=(F&&F.ac.has(
   $('keys').innerHTML=(fx?'<div><b>W / S</b>gas + / −</div><div><b>↑ ↓</b>morro abajo / arriba</div><div><b>← →</b>alabeo (virar)</div><div><b>A / D</b>timón</div>':'<div><b>W / S</b>subir / bajar</div><div><b>A / D</b>girar</div><div><b>↑ ↓ ← →</b>desplazar</div>')
    +'<div><b>Espacio</b>pausa · <kbd>N</kbd> paso</div><div><b>C</b>cámara · <kbd>H</kbd> RTH · <kbd>R</kbd> reiniciar</div><div><b>Esc</b>hangar · <kbd>F1</kbd> ayuda</div>';
 }
+$('chips').addEventListener('click',function(e){ var b=e.target.closest&&e.target.closest('button[data-cam]'); if(b&&!b.disabled&&F&&!hangarOpen) setCam(b.dataset.cam); });
 function chips(d){
   var s=[]; var st={ground:'En tierra',landed:'En tierra',flying:'En vuelo',rolling:'Rodando',crashed:'Siniestrado'}[F.status];
   s.push('<span class="chip">'+F.ac.type.name.split(' (')[0]+'</span>');
-  s.push('<span class="chip">Cám: <b>'+camNames[SIM.camMode]+'</b></span>');
+  s.push('<span class="chip cams">Cám: '+cams.map(function(m,i){ var off=(m==='fpv'&&!hasCam()); return '<button type="button" data-cam="'+m+'"'+(m===SIM.camMode?' class="on"':'')+(off?' disabled title="Este dron no lleva cámara (añádela en el hangar)"':' title="Tecla '+(i+1)+'"')+'>'+({vlos:'Vista',fpv:'FPV',chase:'Seguim.',top:'Cenital'})[m]+'</button>'; }).join('')+'</span>');
   if(F.ac.kind!=='fixed') s.push('<span class="chip">Modo: <b>'+(F.rth?'RTH':(F.gpsActive?(F.holdSrc==='FLUJO'?'FLUJO ÓPTICO':'GPS'):'ATTI'))+'</b></span>');
   s.push('<span class="chip"><b>'+st+'</b></span>');
   if(speed!==1) s.push('<span class="chip">Sim <b>×'+speed+'</b></span>');
