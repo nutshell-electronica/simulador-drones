@@ -109,6 +109,22 @@ kbd{font-family:var(--mono);font-size:10.5px;border:1px solid var(--line2);borde
 .touch #touch .stk i{width:56px;height:56px}
 .touch .btn{min-height:36px}
 #stage,#gl{touch-action:none}
+
+/* pantallas pequeñas: la barra superior se desplaza y nada queda inalcanzable */
+.btn{white-space:nowrap}
+.tb{min-width:0;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.tb::-webkit-scrollbar{display:none}
+.tb .btn{flex:0 0 auto}
+@media (max-width:1000px){ #top{gap:8px;padding:0 8px} .id b{white-space:nowrap;font-size:12px} .ttl{display:none} .tb{margin-left:auto} .btn{padding:5px 8px;font-size:10.5px} }
+@media (max-width:700px){ .id div{display:none} #top{height:48px} .tb .btn{min-height:34px} }
+@media (max-width:760px), (max-height:560px){
+  .touch #chartp{display:none}
+  .touch #left{width:170px;font-size:12px}
+  .touch #touch .stk{width:116px;height:116px} .touch #touch .stk i{width:48px;height:48px}
+  .touch #touch .tbar{bottom:140px;max-width:64%}
+  .touch #osd{bottom:180px}
+}
+@media (max-width:760px) and (min-height:561px){ .touch #left{max-height:calc(100% - 330px)} }
 /* hangar */
 #hangar{position:absolute;inset:0;background:var(--bg);z-index:20;display:flex;flex-direction:column}
 #tabs{display:flex;gap:0;padding:12px 18px 0;border-bottom:2px solid var(--ink);background:var(--bg)}
@@ -193,7 +209,7 @@ table.bud{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:
   </div>
   <div id="touch">
     <div class="stk" id="stL"><b>GAS ↕ · GIRO ↔</b><i></i></div>
-    <div class="tbar"><button id="tbCam">Cámara</button><button id="tbRth">RTH</button><button id="tbMode">GPS/ATTI</button><button id="tbLid">Sensores</button><button id="tbZoom">Zoom</button><button id="tbIns">Datos</button><button id="tbFail">Fallo</button><button id="tbChute">Paracaídas</button></div>
+    <div class="tbar"><button id="tbCam">Cámara</button><button id="tbRth">RTH</button><button id="tbMode">GPS/ATTI</button><button id="tbLid">Sensores</button><button id="tbZoom">Zoom</button><button id="tbIns">Datos</button><button id="tbHud">Paneles</button><button id="tbFail">Fallo</button><button id="tbChute">Paracaídas</button></div>
     <div class="stk" id="stR"><b>DESPLAZAR</b><i></i></div>
   </div>
   <div id="inspector" class="panel"></div>
@@ -2475,7 +2491,7 @@ function stick(el,ax,ay){
   el.addEventListener('pointercancel',function(e){ if(e.pointerId===id) end(); });
 }
 stick($('stL'),'yaw','thr'); stick($('stR'),'roll','pitch');
-[['tbCam','KeyC'],['tbRth','KeyH'],['tbMode','KeyQ'],['tbLid','KeyL'],['tbChute','KeyX'],['tbFail','KeyF'],['tbZoom','KeyZ'],['tbIns','KeyI']].forEach(function(b){
+[['tbCam','KeyC'],['tbRth','KeyH'],['tbMode','KeyQ'],['tbLid','KeyL'],['tbChute','KeyX'],['tbFail','KeyF'],['tbZoom','KeyZ'],['tbIns','KeyI'],['tbHud','KeyU']].forEach(function(b){
   $(b[0]).addEventListener('click',function(){ AUD.init(); if(!hangarOpen&&F) key(b[1]); }); });
 $('bTouch').onclick=function(){ setTouch(!touchOn); };
 (function(){ var on=false, saved=null; try{ saved=localStorage.getItem('santsim_touch'); }catch(e){}
