@@ -231,6 +231,7 @@ table.bud{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:
       <div class="tab" data-p="2"><span class="n">3</span>Escenario</div>
       <div class="tab" data-p="3"><span class="n">4</span>Radio y normativa</div>
       <div class="tab" data-p="4"><span class="n">5</span>Parámetros ArduPilot</div>
+      <div class="tab" data-p="5"><span class="n">6</span>Emisora real</div>
     </div>
     <div id="pages">
       <div class="pg on" id="pg0">
@@ -331,6 +332,7 @@ table.bud{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:
           <div class="card"><h3>Qué hace el simulador con ellos</h3><div class="bd" id="apOut"></div></div>
         </div>
       </div>
+      <div class="pg" id="pg5"><div class="cols" id="padUI"></div></div>
     </div>
     <div id="fly"><div class="st" id="flySt"></div><button class="btn" id="bPrev">Restablecer escenario</button><button class="btn pri" id="bFly">Volar ▶</button></div>
   </section>
@@ -804,7 +806,7 @@ var F = SM.Flight.prototype;
 
 F.reset = function(){
   var ac=this.ac, w=this.world, h=w.home;
-  this.t=0; this.pos={x:h.x,y:w.terrainH(h.x,h.z)+0.02,z:h.z}; this.vel={x:0,y:0,z:0};
+  this.t=0; this.pos={x:h.x,y:w.homeY+0.02,z:h.z}; this.vel={x:0,y:0,z:0};
   this.yaw=(w.startHeading||0)*deg; this.pitch=0; this.roll=0;
   this.status='ground'; this.crashMsg=''; this.landMsg='';
   this.thr=0; this.Tcur=0; this.thrPct=0; this.rpm=0;
@@ -826,7 +828,7 @@ F.reset = function(){
   this.updateSensors();
 };
 
-F.agl = function(){ return this.pos.y-this.world.terrainH(this.pos.x,this.pos.z); };
+F.agl = function(){ return this.pos.y-this.world.floorH(this.pos.x,this.pos.y,this.pos.z); };
 F.hdist = function(){ var h=this.world.home; return Math.hypot(this.pos.x-h.x,this.pos.z-h.z); };
 F.hspeed = function(){ return Math.hypot(this.vel.x,this.vel.z); };
 
@@ -834,7 +836,7 @@ F.crash = function(msg){ if(this.status==='crashed')return; this.status='crashed
 
 /* ---- enlaces y GNSS (10 Hz) ---- */
 F.linkCalc = function(L,pw,ant){
-  var w=this.world, h=w.home, ha={x:h.x,y:w.terrainH(h.x,h.z)+1.8,z:h.z}, p=this.pos;
+  var w=this.world, h=w.home, ha={x:h.x,y:w.homeY+1.8,z:h.z}, p=this.pos;
   var dx=p.x-ha.x, dy=p.y-ha.y, dz=p.z-ha.z, hd=Math.hypot(dx,dz), d=Math.sqrt(hd*hd+dy*dy);
   var elev=Math.atan2(dy,Math.max(hd,1))/deg;
   var pt=SM.dbmFromMw(pw), gt=2, gr=ant.g+SM.antPattern(ant,elev);
@@ -930,7 +932,7 @@ F.step = function(dt,cmd){
   this.t+=dt;
   var ac=this.ac, w=this.world, p=this.pos;
   var agl=this.agl();
-  this.atm=SM.atmo(w.elev,this.wx.qnh,this.wx.temp,Math.max(0,p.y-w.terrainH(w.home.x,w.home.z)));
+  this.atm=SM.atmo(w.elev,this.wx.qnh,this.wx.temp,Math.max(0,p.y-w.homeY));
   var rho=this.atm.rho;
   this.wcur=this.wind.step(dt,p.x,p.y,p.z,agl);
   /* batería: tensión bajo carga con la corriente del paso anterior */
@@ -941,7 +943,7 @@ F.step = function(dt,cmd){
   if(this.t>=this.sens.nextT){ this.sens.nextT=this.t+0.1; this.updateSensors(); }
   this.checkFailsafe(dt); this.checkFence();
   /* mando efectivo: cancelar RTH con mandos si hay enlace */
-  var anyIn=Math.abs(cmd.pitch)+Math.abs(cmd.roll)+Math.abs(cmd.yaw)+Math.abs(cmd.thr)>0.3;
+  var anyIn=Math.abs(cmd.pitch)+Math.abs(cmd.roll)+Math.abs(cmd.yaw)+(cmd.thrAbs!==undefined?0:Math.abs(cmd.thr))>0.3;
   if(this.rth && anyIn && this.sens.ctrl.margin>3 && this.status!=='ground'){ this.cancelRTH(); }
   if(this.landNow&&this.landUser&&cmd.thr>0.3) { this.landNow=false; this.landUser=false; }
   var c=cmd;
@@ -1065,7 +1067,7 @@ F.stepRotor = function(dt,c,rho){
   this.thrPct = ac.kind==='heli'? Math.sqrt(Tt/(Tm1*nm))*100 : (Tmax>0?Math.min(100,100*n1.n/this.nmax):0);
   this.Tmax=Tmax; this.TWR=Tmax/W;
   /* suelo */
-  var gh=w.terrainH(p.x,p.z)+0.02;
+  var gh=w.floorH(p.x,p.y,p.z)+0.02;
   if(p.y<=gh && this.status!=='ground'&&this.status!=='landed'){
     var vs=-v.y, tilt=Math.max(Math.abs(this.pitch),Math.abs(this.roll)), hs=this.hspeed();
     var lim=this.chuteOpen?9:(ac.kind==='heli'?4.5:5.5);
@@ -1086,7 +1088,7 @@ F.stepFixed = function(dt,c,rho){
   var onG=(this.status==='ground'||this.status==='landed'||this.status==='rolling');
   var ap=this.st.ap||{}, aglF=this.agl(), VsRef=this.Vs||10;
   /* gas persistente */
-  if(!this.rth && !this.landNow) this.thr=clamp(this.thr+c.thr*0.6*dt,0,1);
+  if(!this.rth && !this.landNow){ if(c.thrAbs!==undefined) this.thr=clamp(this.thr+clamp(c.thrAbs-this.thr,-3*dt,3*dt),0,1); else this.thr=clamp(this.thr+c.thr*0.6*dt,0,1); }
   if(this.landNow){   /* aterrizaje asistido: aproximación estable y reducción del descenso antes de tocar */
     var thT=aglF<0.7?0:clamp(0.14+1.1*(1.28*VsRef-this.Va)/VsRef,0,0.9);
     this.thr+=clamp(thT-this.thr,-0.8*dt,0.6*dt);
@@ -1183,7 +1185,7 @@ F.stepFixed = function(dt,c,rho){
   this.Tcur=Tthr; this.thrPct=u*100; this.Tmax=T0; this.TWR=Tm1/W;
   this.Vs=Math.sqrt(2*W/(rho*S*(fr.CL0+fr.CLa*fr.aMax*deg)));
   /* suelo */
-  var gh=w.terrainH(p.x,p.z)+0.02;
+  var gh=w.floorH(p.x,p.y,p.z)+0.02;
   if(p.y<=gh && this.status==='flying'){
     var vs=-v.y, bank=Math.abs(this.roll), pit=this.alpha+ga;
     if(w.isWater && w.isWater(p.x,p.z)) this.crash('Amerizaje: el avión cae al agua.');
@@ -1213,6 +1215,7 @@ SW.LIST = [
  {id:'bosque', name:'Bosque y colinas', tag:'Follaje', wx:'brisa', desc:'Colinas suaves cubiertas de arbolado y una torre de radio. El follaje atenúa el enlace y el relieve oculta el dron.'},
  {id:'montana', name:'Montaña (1800 m)', tag:'Relieve y altura', wx:'racheado', desc:'Valle encajonado con crestas de hasta 260 m. Aire poco denso (altitud de densidad alta), ascendentes de ladera, rachas y sombra radioeléctrica tras la cresta.'},
  {id:'costa', name:'Costa y parque eólico', tag:'Mar y viento', wx:'viento', desc:'Playa con bañistas, faro, buque y aerogeneradores en el mar. Viento marino constante y aterrizaje en el agua = pérdida.'},
+ {id:'barrio', name:'Barrio residencial (azotea)', tag:'Casas bajas · azotea', wx:'brisa', desc:'Despegas desde la azotea de un edificio de 21 m en un barrio de casas bajas (6–9 m) con algunos bloques de hasta 34 m, calles de 12 m, una plaza con gente y antenas en las azoteas. Sobrevuelo de zona urbana: normativa, personas, turbulencia entre edificios y aterrizaje sobre cualquier azotea.'},
  {id:'nave', name:'Nave industrial (interior)', tag:'Interior · LiDAR', wx:'calma', desc:'Nave de 60 × 53 × 14 m sin GNSS, con columnas, estanterías, palés y una viga. Equipa telémetros láser o un LiDAR 360° y observa las distancias a paredes y obstáculos.'},
  {id:'aeropuerto', name:'Cercanía de aeropuerto', tag:'Normativa', wx:'calma', desc:'Zona geográfica UAS restringida de 2 km de radio alrededor de la pista y tráfico tripulado cruzando. Practica el respeto del espacio aéreo.'}
 ];
@@ -1268,6 +1271,33 @@ SW.make = function(id, rngf){
     w.zones.push({type:'crowd',x:48,z:-12,r:32,label:'Reunión de personas (mercado)',color:0xd9342b});
     w.zones.push({type:'urban',x:0,z:-470,r:470,label:'Zona urbana / residencial',color:0xe0a82e});
     w.plaza={x:0,z:0,r:50};
+  }
+  else if(id==='barrio'){
+    w.elev=40; w.rough=0.30; w.rfNoise=5; w.ground='urban'; w.startHeading=0;
+    land=function(x,z){ return 0; };
+    pal=function(x,z,h){ return (Math.abs(x)<640&&z<150&&z>-800)?[0.55,0.54,0.52]:[0.46,0.58,0.32]; };
+    var HC=[0xefe9dc,0xe3d3b8,0xd9b99b,0xc9d6dc,0xf2e2c4,0xe8c8c0,0xdfe5e8,0xcfc3ae];
+    w.blocks=[];
+    for(var i=-12;i<=12;i++) for(var j=-3;j<=12;j++){
+      var cx=i*48, cz=-j*48;
+      if(i===0&&j===0) continue;                       /* manzana del edificio de despegue */
+      w.blocks.push({x:cx,z:cz});
+      if(i===0&&j===4){ for(var t=0;t<6;t++){ var a=t*1.047+0.3; add('tree',cx+Math.sin(a)*21,cz+Math.cos(a)*21,3,0,7+rnd()*3,'un árbol',0x3f7a3a); } continue; }   /* plaza */
+      for(var u=0;u<2;u++) for(var v=0;v<2;v++){
+        if(rnd()<0.06){ add('tree',cx+(u?9.5:-9.5),cz+(v?9.5:-9.5),3,0,6+rnd()*4,'un árbol',0x3f7a3a); continue; }
+        var q=rnd(), hh=q<0.78?6+rnd()*3:(q<0.94?11+rnd()*8:20+rnd()*14);
+        var bx=cx+(u?9.5:-9.5)+(rnd()-0.5)*1.5, bz=cz+(v?9.5:-9.5)+(rnd()-0.5)*1.5;
+        var lab=hh<10?'una casa de '+Math.round(hh)+' m':'un edificio de '+Math.round(hh)+' m';
+        add('box',bx,bz,14+rnd()*3,14+rnd()*3,hh,lab,HC[Math.floor(rnd()*HC.length)],{roof:true});
+        if(hh>19&&rnd()<0.6) add('cyl',bx+2,bz+2,0.3,0,6,'una antena',0x888d92,{solid:true,lift:hh});
+      }
+    }
+    add('box',0,0,20,16,21,'el edificio de despegue',0xd6cdbd,{roof:true});
+    add('cyl',7,5,0.25,0,5,'una antena',0x888d92,{solid:true,lift:21});
+    for(var i=0;i<120;i++){ var sx=(Math.floor(rnd()*25)-12)*48+(rnd()<0.5?-24:24), sz=-(Math.floor(rnd()*16)-3)*48+(rnd()-0.5)*40; if(Math.hypot(sx,sz)<25) continue; add('tree',sx,sz,2.5,0,6+rnd()*3,'un árbol',0x3f7a3a); }
+    w.zones.push({type:'crowd',x:0,z:-192,r:22,label:'Plaza con terrazas y gente',color:0xd9342b});
+    w.zones.push({type:'urban',x:0,z:-280,r:560,label:'Zona urbana / residencial',color:0xe0a82e});
+    w.plaza={x:0,z:-192,r:21};
   }
   else if(id==='bosque'){
     w.elev=400; w.rough=0.26;
@@ -1344,7 +1374,13 @@ SW.make = function(id, rngf){
   w.terrainH=function(x,z){ var h=land(x,z); return w.waterOnly?Math.max(0,h):h; };
   /* actualizar y0/top de obstáculos con la altura real del terreno */
   w.obstacles.forEach(function(o){ o.y0=w.terrainH(o.x,o.z)+(o.lift||0); o.top=o.y0+o.h; });
-  w.home.y=w.terrainH(w.home.x,w.home.z);
+  w.floorH=function(x,y,z){
+    var best=w.terrainH(x,z), list=w.grid.at(x,z);
+    for(var i=0;i<list.length;i++){ var o=list[i]; if(!o.roof||o.top<=best||o.top>y+0.2) continue;
+      if(Math.abs(x-o.x)<o.dx/2&&Math.abs(z-o.z)<o.dz/2) best=o.top; }
+    return best;
+  };
+  w.homeY=w.floorH(w.home.x,1e9,w.home.z); w.home.y=w.homeY;
   w.time=0;
   /* tráfico tripulado: objeto dinámico */
   if(w.traffic){ w.dynamic.push({x:-1400,y:w.traffic.alt,z:w.traffic.z,r:9,label:w.traffic.label,traffic:true}); }
@@ -1371,7 +1407,7 @@ SW.make = function(id, rngf){
       var o=list[i], hit;
       if(o.kind==='box') hit=Math.abs(x-o.x)<o.dx/2+r&&Math.abs(z-o.z)<o.dz/2+r;
       else { var rr=(o.kind==='tree'?o.dx*0.8:o.dx)+r; hit=(x-o.x)*(x-o.x)+(z-o.z)*(z-o.z)<rr*rr; }
-      if(hit && y<o.top+r*0.5 && y>(o.lift?o.y0-r:o.y0-2)){ if(o.kind==='tree' && y>o.top) continue; return o; }
+      if(hit && y<o.top+r*0.5 && y>(o.lift?o.y0-r:o.y0-2)){ if(o.roof && y>=o.top-0.25) continue; if(o.kind==='tree' && y>o.top) continue; return o; }
     }
     for(var k=0;k<w.dynamic.length;k++){ var d=w.dynamic[k]; var dd=Math.sqrt((x-d.x)*(x-d.x)+(y-d.y)*(y-d.y)+(z-d.z)*(z-d.z)); if(dd<d.r+r) return d; }
     return null;
@@ -1383,6 +1419,7 @@ SW.make = function(id, rngf){
     for(var i=ci-1;i<=ci+1;i++)for(var j=cj-1;j<=cj+1;j++){
       var list=w.grid.c[i+','+j]; if(!list) continue;
       for(var n=0;n<list.length;n++){ var o=list[n]; if(y>o.top+3) continue;
+        if(o.roof && y>=o.top-0.25 && Math.abs(x-o.x)<o.dx/2 && Math.abs(z-o.z)<o.dz/2) continue;   /* sobre la azotea: es suelo, no obstáculo */
         var dx,dz;
         if(o.kind==='box'){ dx=Math.max(0,Math.abs(x-o.x)-o.dx/2); dz=Math.max(0,Math.abs(z-o.z)-o.dz/2); }
         else { dx=Math.max(0,Math.hypot(x-o.x,z-o.z)-o.dx); dz=0; }
@@ -1664,7 +1701,7 @@ R3D.loadWorld=function(w){
   world=w; disposeGroup(S.worldGroup); dyn=[]; trailPts=[];
   var G=S.worldGroup, EXT=SW.EXT;
   /* terreno */
-  var flat=(w.id==='campo'||w.id==='aeropuerto'||w.id==='ciudad');
+  var flat=(w.id==='campo'||w.id==='aeropuerto'||w.id==='ciudad'||w.id==='barrio');
   var seg=flat?90:190;
   var geo=new THREE.PlaneGeometry(EXT*2,EXT*2,seg,seg); geo.rotateX(-Math.PI/2);
   var pa=geo.attributes.position, col=new Float32Array(pa.count*3);
@@ -1685,10 +1722,17 @@ R3D.loadWorld=function(w){
     var a=new THREE.Mesh(new THREE.PlaneGeometry(1500,900),new THREE.MeshLambertMaterial({color:0x3a3d42})); a.rotation.x=-Math.PI/2; a.position.set(0,0.03,-520); G.add(a);
     var pl=new THREE.Mesh(new THREE.CircleGeometry(w.plaza.r,36),new THREE.MeshLambertMaterial({color:0xcfcabd})); pl.rotation.x=-Math.PI/2; pl.position.set(0,0.05,0); G.add(pl);
   }
+  if(w.id==='barrio'){
+    var a2=new THREE.Mesh(new THREE.PlaneGeometry(1300,1000),new THREE.MeshLambertMaterial({color:0x3d4046})); a2.rotation.x=-Math.PI/2; a2.position.set(0,0.03,-300); G.add(a2);
+    var pm=new THREE.InstancedMesh(new THREE.BoxGeometry(36,0.12,36),new THREE.MeshLambertMaterial({color:0xffffff}),w.blocks.length), dm2=new THREE.Object3D(), c3=new THREE.Color();
+    w.blocks.forEach(function(b,i){ dm2.position.set(b.x,0.08,b.z); dm2.updateMatrix(); pm.setMatrixAt(i,dm2.matrix); c3.setHex(((Math.abs(b.x)*7+Math.abs(b.z)*13)|0)%3===0?0x9fb08a:0xb9b4a5); pm.setColorAt(i,c3); });
+    pm.instanceMatrix.needsUpdate=true; pm.instanceColor.needsUpdate=true; G.add(pm);
+    var pl2=new THREE.Mesh(new THREE.CircleGeometry(w.plaza.r,36),new THREE.MeshLambertMaterial({color:0xcfcabd})); pl2.rotation.x=-Math.PI/2; pl2.position.set(w.plaza.x,0.2,w.plaza.z); G.add(pl2);
+  }
   /* pista de aterrizaje de césped en campo ya incluida; helipuerto / base */
   var hp=canvasTex(128,128,function(c,W,H){ c.fillStyle='#f5c842'; c.beginPath(); c.arc(64,64,62,0,6.3); c.fill(); c.fillStyle='#222'; c.font='bold 84px sans-serif'; c.textAlign='center'; c.textBaseline='middle'; c.fillText('H',64,70); });
   var pad=new THREE.Mesh(new THREE.CircleGeometry(1.4,24),new THREE.MeshBasicMaterial({map:hp,transparent:true}));
-  pad.rotation.x=-Math.PI/2; pad.position.set(w.home.x,w.terrainH(w.home.x,w.home.z)+0.09,w.home.z); G.add(pad);
+  pad.rotation.x=-Math.PI/2; pad.position.set(w.home.x,w.homeY+0.09,w.home.z); G.add(pad);
   if(w.floor){ var fl=new THREE.Mesh(new THREE.PlaneGeometry(w.floor.w,w.floor.d),new THREE.MeshLambertMaterial({color:0x8e949a})); fl.rotation.x=-Math.PI/2; fl.position.set(w.floor.x,0.04,w.floor.z); G.add(fl);
     var ln=new THREE.MeshBasicMaterial({color:0xe8c52e}); [-3,3].forEach(function(o){ var l=new THREE.Mesh(new THREE.PlaneGeometry(0.2,50),ln); l.rotation.x=-Math.PI/2; l.position.set(o*3,0.06,w.floor.z-1); G.add(l); }); }
   if(w.decor){ var dm=new THREE.InstancedMesh(new THREE.BoxGeometry(1,1,1),new THREE.MeshBasicMaterial({color:0xffffff}),w.decor.length), dd=new THREE.Object3D(), dc=new THREE.Color();
@@ -1904,7 +1948,7 @@ R3D.update=function(f,dt,opts){
   drone.spin.forEach(function(m){ m.rotation.y+=8*dt; });
   if(drone.strobe) drone.strobe.visible=(Math.floor(T*2.2)%2===0)||(T%0.45<0.06);
   /* sombra */
-  var gh=world.terrainH(p.x,p.z); S.shadow.position.set(p.x,gh+0.12,p.z);
+  var gh=world.floorH(p.x,p.y,p.z); S.shadow.position.set(p.x,gh+0.12,p.z);
   var ah=Math.max(0,p.y-gh); S.shadow.material.opacity=clamp(0.4-ah*0.004,0.06,0.4)*(S.nightMode?0.4:1);
   var base=Math.max(0.3,drone.dim*0.45); S.shadow.scale.setScalar(base*(1+ah*0.012));
   /* estela */
@@ -1916,7 +1960,7 @@ R3D.update=function(f,dt,opts){
   var cam=S.cam, mode=S.camMode, dh=drone.dim;
   var fx=Math.sin(f.yaw), fz=-Math.cos(f.yaw);
   if(mode==='vlos'){
-    var h=world.home, ey=world.terrainH(h.x,h.z)+1.75; cam.position.set(h.x+0.0,ey,h.z+1.5);
+    var h=world.home, ey=world.homeY+1.75; cam.position.set(h.x+0.0,ey,h.z+1.5);
     var tgt=_v.set(p.x,p.y,p.z); cam.up.set(0,1,0); cam.lookAt(tgt);
     var d=Math.hypot(p.x-h.x,p.y-ey,p.z-h.z); cam.fov=opts.zoom>1?40/opts.zoom*1.0:55; cam.near=0.5;
   } else if(mode==='fpv'){
@@ -2099,7 +2143,7 @@ SIM.mapRaster=function(w,N,ext){
   w.zones.forEach(function(z){ g.strokeStyle='#d9342b'; g.fillStyle='rgba(217,52,43,0.12)'; g.lineWidth=1.5; g.beginPath(); g.arc(px(z.x),px(z.z),z.r/step,0,6.3); g.fill(); g.stroke(); });
   return {canvas:c,ext:ext,step:step};
 };
-var SCN_EXT={campo:700,ciudad:900,bosque:1300,montana:1600,costa:1300,nave:60,aeropuerto:3000};
+var SCN_EXT={campo:700,ciudad:900,barrio:700,bosque:1300,montana:1600,costa:1300,nave:60,aeropuerto:3000};
 SIM.SCN_EXT=SCN_EXT;
 
 /* ---------- construcción del hangar ---------- */
@@ -2185,7 +2229,7 @@ function syncCtrls(){
   $('rCl').value=r.cl; $('rVl').value=r.vl; $('rCa').value=r.ca; $('rVa').value=r.va; $('rFl').value=r.fl; $('rFb').value=r.fb; $('rAlt').value=r.alt; $('rAltV').textContent=r.alt+' m'; $('rObs').checked=r.obs;
   fillPw('rCp',SD.byId(SD.CTRL_LINKS,r.cl),r.cp); fillPw('rVp',SD.byId(SD.VID_LINKS,r.vl),r.vp);
 }
-var ELEVS={campo:50,ciudad:30,bosque:400,montana:1800,costa:5,nave:50,aeropuerto:8};
+var ELEVS={campo:50,ciudad:30,barrio:40,bosque:400,montana:1800,costa:5,nave:50,aeropuerto:8};
 function SW_ELEV(id){return ELEVS[id]||0;}
 SIM.elev=function(){ return ST.elevOv!==null?ST.elevOv:SW_ELEV(ST.scn); };
 function fillPw(id,L,cur){ var s=$(id); fill(s,L.powers.map(function(p){return [p,p+' mW'+(p>L.lim?'  ⚠':'')];}),cur); if(L.powers.indexOf(+cur)<0){ s.value=L.powers[1]||L.powers[0]; } }
@@ -2448,6 +2492,134 @@ SIM.apInit=function(){
   $('apOn').onchange=function(){ ST.apOn=$('apOn').checked&&!!ST.apText; render(); SIM.save(); };
   $('apOut').onclick=function(e){ var b=e.target.closest&&e.target.closest('button[data-sg]'); if(!b) return; var s=$('apOut')._sg[+b.dataset.sg]; if(s){ s.fn(); render(); } };
 };
+})();
+
+/* ===== EMISORA REAL (Gamepad API): radio por USB, cable de simulador o dongle que se vea como "joystick" ===== */
+(function(){
+var $=function(id){return document.getElementById(id);};
+var PAD=SIM.PAD={out:{on:false,yaw:0,thr:0,roll:0,pitch:0,thrAbs:undefined}, hooks:{}};
+var FN={thr:'Gas / altura',yaw:'Guiñada (timón)',pitch:'Cabeceo (adelante/atrás)',roll:'Alabeo (izq./dcha.)'};
+var AUXN={cam:'Cambiar cámara',rth:'Regreso a casa (RTH)',land:'Aterrizar (suave)',mode:'GPS ↔ ATTI',pause:'Pausa',reset:'Reiniciar vuelo',chute:'Paracaídas',fail:'Fallo de motor'};
+var AUXLVL={rth:1,land:1};            /* interruptores: activo = on, inactivo = off */
+function ax(a,inv){ return {a:a,inv:inv?1:0,lo:-1,hi:1,c:0}; }
+var PRE={
+  aetr:{name:'AETR · EdgeTX / OpenTX / Betaflight',thr:ax(2),yaw:ax(3),pitch:ax(1),roll:ax(0)},
+  taer:{name:'TAER · FrSky, Spektrum, FlySky',thr:ax(0),yaw:ax(3),pitch:ax(2),roll:ax(1)},
+  xbox:{name:'Mando de consola (modo 2)',thr:ax(1,1),yaw:ax(0),pitch:ax(3,1),roll:ax(2)}
+};
+var cfg={on:true,dz:0.04,expo:0,padId:'',map:JSON.parse(JSON.stringify({thr:PRE.aetr.thr,yaw:PRE.aetr.yaw,pitch:PRE.aetr.pitch,roll:PRE.aetr.roll})),aux:{}};
+try{ var sv=JSON.parse(localStorage.getItem('santsim_pad')||'null'); if(sv&&sv.map) cfg=Object.assign(cfg,sv); }catch(e){}
+function save(){ try{ localStorage.setItem('santsim_pad',JSON.stringify(cfg)); }catch(e){} }
+var cur=null, snap=null, touched=false, learn=null, cal=null, prevAux={}, lastKey='', rawAx=[], rawBt=[];
+
+function list(){ var g=(navigator.getGamepads?navigator.getGamepads():[])||[], r=[]; for(var i=0;i<g.length;i++) if(g[i]&&g[i].connected&&g[i].axes&&g[i].axes.length>=2) r.push(g[i]); return r; }
+function pick(l){ if(!l.length) return null; for(var i=0;i<l.length;i++) if(l[i].id===cfg.padId) return l[i]; return l[0]; }
+
+function norm(m,raw,isThr){
+  if(raw===undefined||raw===null) return 0;
+  var lo=m.lo,hi=m.hi,n;
+  if(isThr){ n=(hi-lo)>0.05?(raw-lo)/(hi-lo)*2-1:raw; }
+  else { var c=m.c; n=raw>=c?(hi-c>0.05?(raw-c)/(hi-c):raw-c):(c-lo>0.05?(raw-c)/(c-lo):raw-c); }
+  n=Math.max(-1,Math.min(1,n)); if(m.inv) n=-n;
+  var dz=cfg.dz*(isThr?1.5:1), a=Math.abs(n);
+  if(a<dz) return 0; a=(a-dz)/(1-dz);
+  var e=cfg.expo; a=(1-e)*a+e*a*a*a; return n<0?-a:a;
+}
+function auxState(d,g){ if(!d) return false; if(d.t==='b') return !!(g.buttons[d.i]&&g.buttons[d.i].pressed); var v=g.axes[d.i]; return v!==undefined&&v*d.d>0.5; }
+
+function poll(){
+  var l=list(), g=pick(l); cur=g;
+  if(!g){ PAD.out.on=false; PAD.out.thrAbs=undefined; snap=null; touched=false; PAD.state=l.length?'':'none'; draw(); return; }
+  if(!snap||snap.id!==g.id){ snap={id:g.id,ax:g.axes.slice()}; touched=false; render(); }
+  rawAx=g.axes; rawBt=g.buttons;
+  var i; if(!touched){ for(i=0;i<g.axes.length;i++) if(Math.abs(g.axes[i]-snap.ax[i])>0.12){ touched=true; break; } if(!touched) for(i=0;i<g.buttons.length;i++) if(g.buttons[i].pressed){ touched=true; break; } }
+  /* aprendizaje de ejes / interruptores */
+  if(learn){
+    if(learn.kind==='axis'){ var bi=-1,bd=0.5; for(i=0;i<g.axes.length;i++){ var dd=Math.abs(g.axes[i]-snap.ax[i]); if(dd>bd){ bd=dd; bi=i; } } if(bi>=0){ cfg.map[learn.key].a=bi; cfg.map[learn.key].lo=-1; cfg.map[learn.key].hi=1; cfg.map[learn.key].c=snap.ax[bi]; learn=null; save(); render(); } }
+    else { var found=null; for(i=0;i<g.buttons.length;i++) if(g.buttons[i].pressed){ found={t:'b',i:i}; break; }
+      if(!found) for(i=0;i<g.axes.length;i++){ var d2=g.axes[i]-snap.ax[i]; if(Math.abs(d2)>0.6){ found={t:'a',i:i,d:d2>0?1:-1}; break; } }
+      if(found){ cfg.aux[learn.key]=found; learn=null; save(); render(); } }
+  }
+  /* calibración */
+  if(cal){ for(i=0;i<g.axes.length;i++){ cal.min[i]=Math.min(cal.min[i]===undefined?9:cal.min[i],g.axes[i]); cal.max[i]=Math.max(cal.max[i]===undefined?-9:cal.max[i],g.axes[i]); } }
+  var o=PAD.out, m=cfg.map, key;
+  o.on=!!(cfg.on&&touched&&!learn&&!cal);
+  if(o.on){
+    ['yaw','pitch','roll'].forEach(function(k){ o[k]=norm(m[k],g.axes[m[k].a],false); });
+    var tn=norm(m.thr,g.axes[m.thr.a],true); o.thr=tn; o.thrAbs=(tn+1)/2;
+    for(key in AUXN){ var st=auxState(cfg.aux[key],g), pv=prevAux[key]; if(pv===undefined){ prevAux[key]=st; continue; }
+      if(st!==pv){ prevAux[key]=st; var h=PAD.hooks[key]; if(h&&!SIM.hangarOpen()){ if(AUXLVL[key]) h(st); else if(st) h(); } } }
+  } else { o.yaw=o.pitch=o.roll=o.thr=0; o.thrAbs=undefined; for(key in AUXN) prevAux[key]=auxState(cfg.aux[key],g); }
+  draw();
+}
+
+/* ---------- interfaz ---------- */
+var el=null;
+function opts(sel,n){ var s=''; for(var i=0;i<n;i++) s+='<option value="'+i+'"'+(i===sel?' selected':'')+'>Eje '+(i+1)+'</option>'; return s; }
+function auxTxt(d){ return !d?'<i style="color:var(--ink3,#888)">sin asignar</i>':(d.t==='b'?'Botón '+(d.i+1):'Eje '+(d.i+1)+(d.d>0?' (+)':' (−)')); }
+function render(){
+  if(!el) return; var g=cur, h='';
+  var l=list();
+  h+='<div class="card"><h3>Emisora detectada</h3><div class="bd">';
+  if(!l.length){
+    h+='<div class="note" style="margin-top:0"><b>No se detecta ninguna emisora.</b> Conéctala por USB (en el menú de la radio elige modo <b>«USB Joystick (HID)»</b>), o usa un cable de simulador / dongle y <b>mueve un stick o pulsa un botón</b>: el navegador no la muestra hasta que recibe algo. Con Chrome o Edge, mejor.</div>';
+  } else {
+    h+='<div class="row"><label>Dispositivo</label><select id="padSel">'+l.map(function(p){ return '<option value="'+p.index+'"'+(g&&p.index===g.index?' selected':'')+'>'+p.id.replace(/</g,'')+'</option>'; }).join('')+'</select></div>';
+  }
+  h+='<label class="chk"><input type="checkbox" id="padOn"'+(cfg.on?' checked':'')+'><div>Usar la emisora para volar<small>Se activa cuando mueves un mando. El teclado y la pantalla táctil siguen funcionando si no tocas la emisora.</small></div></label>';
+  h+='<div class="note" id="padState"></div>';
+  if(g){
+    h+='<div id="padAx" style="margin-top:8px">'; for(var i=0;i<Math.min(g.axes.length,10);i++){
+      var fn=''; for(var k in cfg.map) if(cfg.map[k].a===i) fn+=(fn?' · ':'')+FN[k].split(' ')[0];
+      h+='<div style="display:flex;align-items:center;gap:8px;font-size:11px;margin:2px 0"><span style="width:44px;font-family:var(--mono)">Eje '+(i+1)+'</span><span style="flex:1;height:9px;background:#e8ecef;border:1px solid var(--line2);position:relative"><i id="padA'+i+'" style="position:absolute;top:-1px;width:3px;height:9px;background:var(--blue);left:50%"></i></span><span id="padV'+i+'" style="width:42px;text-align:right;font-family:var(--mono)"></span><span style="width:84px;color:var(--ink2)">'+fn+'</span></div>'; }
+    h+='</div>';
+    h+='<div id="padBt" style="display:flex;flex-wrap:wrap;gap:3px;margin-top:6px">'; for(var b=0;b<Math.min(g.buttons.length,24);b++) h+='<span id="padB'+b+'" style="min-width:24px;text-align:center;font-size:10px;padding:1px 3px;border:1px solid var(--line2);font-family:var(--mono)">'+(b+1)+'</span>'; h+='</div>';
+  }
+  h+='<div class="pre" style="margin-top:10px;flex-wrap:wrap">'+Object.keys(PRE).map(function(k){ return '<button class="btn" data-pre="'+k+'">'+PRE[k].name+'</button>'; }).join('')+'</div>';
+  h+='<div class="row" style="margin-top:8px"><label>Zona muerta</label><div class="val"><input type="range" id="padDz" min="0" max="0.15" step="0.01" value="'+cfg.dz+'"><span id="padDzV">'+Math.round(cfg.dz*100)+' %</span></div></div>';
+  h+='<div class="row"><label>Expo (suavizar el centro)</label><div class="val"><input type="range" id="padEx" min="0" max="0.7" step="0.05" value="'+cfg.expo+'"><span id="padExV">'+Math.round(cfg.expo*100)+' %</span></div></div>';
+  h+='<div class="pre" style="margin-top:8px"><button class="btn'+(cal?' warn':'')+'" id="padCal">'+(cal?'Terminar calibración':'Calibrar recorrido')+'</button></div>';
+  h+='<div class="note">'+(cal?'<b>Calibrando:</b> deja los sticks en el centro un instante, luego mueve todos los mandos a todos sus extremos varias veces y pulsa «Terminar».':'Calibra si los sticks no llegan a ±100 % o no centran en 0. Suelta primero los sticks (el gas puede quedar abajo).')+'</div>';
+  h+='</div></div>';
+  h+='<div class="card"><h3>Asignación de mandos</h3><div class="bd"><table class="tbl" style="width:100%;font-size:12px">';
+  h+='<tr><th align=left>Función</th><th>Eje</th><th>Invertir</th><th></th></tr>';
+  for(var k2 in FN){ var m=cfg.map[k2]; h+='<tr><td>'+FN[k2]+'</td><td><select data-ax="'+k2+'">'+opts(m.a,Math.max(8,g?g.axes.length:8))+'</select></td><td align=center><input type="checkbox" data-inv="'+k2+'"'+(m.inv?' checked':'')+'></td><td><button class="btn'+(learn&&learn.key===k2?' warn':'')+'" data-learn="axis:'+k2+'">'+(learn&&learn.key===k2?'Mueve el stick…':'Detectar')+'</button></td></tr>'; }
+  h+='</table><div class="note">Pulsa «Detectar» y mueve el stick correspondiente. Si va al revés, marca «Invertir». Cabeceo: adelante = avanzar.</div>';
+  h+='<h3 style="margin:12px -12px 6px">Interruptores y botones</h3><table class="tbl" style="width:100%;font-size:12px"><tr><th align=left>Función</th><th align=left>Asignado a</th><th></th></tr>';
+  for(var a in AUXN) h+='<tr><td>'+AUXN[a]+(AUXLVL[a]?' <small>(interruptor)</small>':'')+'</td><td>'+auxTxt(cfg.aux[a])+'</td><td style="white-space:nowrap"><button class="btn'+(learn&&learn.key===a?' warn':'')+'" data-learn="aux:'+a+'">'+(learn&&learn.key===a?'Acciona…':'Detectar')+'</button> <button class="btn" data-clr="'+a+'">✕</button></td></tr>';
+  h+='</table><div class="note">«Detectar» y acciona el interruptor o botón de la emisora. RTH y Aterrizar actúan como interruptor: arriba = activo, abajo = cancelar. En ala fija, el stick de gas fija la potencia directamente; en multirrotor, el centro mantiene la altura.</div>';
+  h+='</div></div>';
+  if(h!==lastKey){ el.innerHTML=h; lastKey=h; }
+}
+function draw(){
+  var st=$('padState'); if(!el||!st) return; var g=cur;
+  var txt=!g?'Sin emisora.':(cfg.on?(PAD.out.on?'<b style="color:var(--green,#1b7a3a)">● Emisora activa</b> — controlas el dron con ella.':(cal?'Calibrando…':(learn?'Esperando mando…':'Emisora detectada. Mueve un stick para activarla.'))):'Emisora desactivada.');
+  if(st._t!==txt){ st.innerHTML=txt; st._t=txt; }
+  if(!g) return;
+  for(var i=0;i<Math.min(g.axes.length,10);i++){ var a=$('padA'+i), v=$('padV'+i); if(!a) break; var x=(g.axes[i]+1)/2*100; a.style.left='calc('+Math.max(0,Math.min(100,x))+'% - 1px)'; v.textContent=Math.round(g.axes[i]*100)+'%'; }
+  for(var b=0;b<Math.min(g.buttons.length,24);b++){ var bb=$('padB'+b); if(!bb) break; var on=g.buttons[b].pressed; if(bb._o!==on){ bb._o=on; bb.style.background=on?'var(--blue)':''; bb.style.color=on?'#fff':''; } }
+}
+PAD.init=function(){
+  el=$('padUI'); if(!el) return; render();
+  el.addEventListener('change',function(e){ var t=e.target;
+    if(t.id==='padOn'){ cfg.on=t.checked; save(); }
+    else if(t.id==='padSel'){ var g=(navigator.getGamepads()||[])[+t.value]; if(g){ cfg.padId=g.id; snap=null; save(); render(); } }
+    else if(t.dataset.ax){ var m=cfg.map[t.dataset.ax]; m.a=+t.value; m.lo=-1; m.hi=1; m.c=0; save(); lastKey=''; render(); }
+    else if(t.dataset.inv){ cfg.map[t.dataset.inv].inv=t.checked?1:0; save(); } });
+  el.addEventListener('input',function(e){ var t=e.target; if(t.id==='padDz'){ cfg.dz=+t.value; $('padDzV').textContent=Math.round(cfg.dz*100)+' %'; save(); } if(t.id==='padEx'){ cfg.expo=+t.value; $('padExV').textContent=Math.round(cfg.expo*100)+' %'; save(); } });
+  el.addEventListener('click',function(e){ var t=e.target.closest('button'); if(!t) return;
+    if(t.dataset.pre){ var p=PRE[t.dataset.pre]; for(var k in FN) cfg.map[k]=JSON.parse(JSON.stringify(p[k])); save(); lastKey=''; render(); }
+    else if(t.dataset.learn){ var q=t.dataset.learn.split(':'); if(!cur) return; snap={id:cur.id,ax:cur.axes.slice()}; learn=(learn&&learn.key===q[1])?null:{kind:q[0],key:q[1]}; lastKey=''; render(); }
+    else if(t.dataset.clr){ delete cfg.aux[t.dataset.clr]; save(); lastKey=''; render(); }
+    else if(t.id==='padCal'){ if(!cal){ if(!cur) return; cal={min:[],max:[],c:cur.axes.slice()}; } else { var g=cur; if(g){ for(var kk in cfg.map){ var m=cfg.map[kk], i=m.a; if(cal.min[i]!==undefined&&cal.max[i]-cal.min[i]>0.5){ m.lo=cal.min[i]; m.hi=cal.max[i]; m.c=(kk==='thr')?0:cal.c[i]; } } save(); } cal=null; } lastKey=''; render(); } });
+};
+PAD.refresh=function(){ lastKey=''; render(); };
+PAD.active=function(){ return PAD.out.on; };
+window.addEventListener('gamepadconnected',function(){ lastKey=''; render(); });
+window.addEventListener('gamepaddisconnected',function(){ lastKey=''; snap=null; render(); });
+PAD.init();
+setInterval(poll,8);
+setInterval(function(){ var n=list().length; if(n!==PAD._n){ PAD._n=n; lastKey=''; render(); } },700);
 })();
 
 /* ===== INTERFAZ (B): HUD, alertas, normativa, mapa, registro ===== */
@@ -2830,6 +3002,12 @@ function resetCommon(){
 }
 function resetFlight(){ if(!F) return; applyLive(); F.reset(); resetCommon(); }
 function hasCam(){ return F && (F.ac.has('camfpv')||F.ac.has('camhd')||F.ac.has('camir')); }
+(function(){ var H=SIM.PAD.hooks; function ok(){ return F&&!hangarOpen; }
+  H.cam=function(){ if(ok()) nextCam(); }; H.pause=function(){ if(ok()) togglePause(); }; H.reset=function(){ if(ok()) resetFlight(); };
+  H.mode=function(){ if(ok()) F.toggleMode(); }; H.chute=function(){ if(ok()) F.deployChute(); }; H.fail=function(){ if(ok()) F.toggleFail(); };
+  H.rth=function(on){ if(!ok()) return; if(on){ if(!F.rth&&(F.status==='flying'||F.status==='rolling')) F.startRTH('Emisora'); } else if(F.rth) F.cancelRTH(); };
+  H.land=function(on){ if(!ok()) return; if(on){ if(!F.landNow) F.toggleLand(); } else if(F.landNow&&F.landUser) F.toggleLand(); };
+})();
 function setCam(m){ SIM.camMode=m; R3D.setCamMode(m); $('osd').style.display=(m==='fpv')?'block':'none'; if(m!=='fpv'){ $('noise').style.opacity=0; $('vidlost').style.display='none'; } R3D.setUptilt(F&&F.ac.frame.id==='quad-5'?32:12); }
 function nextCam(){ var i=cams.indexOf(SIM.camMode), n=i; do{ n=(n+1)%cams.length; }while(cams[n]==='fpv'&&!hasCam()); setCam(cams[n]); }
 function ropts(){ return {trail:ST.trail, zoom:zoomV, gimbal:F&&F.ac.has('camhd')&&!F.ac.has('camfpv'), windX:F?F.wcur.x:0, windZ:F?F.wcur.z:0, topH:90}; }
@@ -2893,14 +3071,18 @@ $('bPrev').onclick=function(){ var m=SW.LIST.filter(function(x){return x.id===ST
 $('bHelp').onclick=function(){ toggleHelp(); };
 window.addEventListener('resize',function(){ R3D.resize(); });
 
+SIM.hangarOpen=function(){ return hangarOpen; };
 var analog={yaw:0,thr:0,roll:0,pitch:0};
 function targetCmd(){
   var t={pitch:(keys.ArrowUp?1:0)-(keys.ArrowDown?1:0), roll:(keys.ArrowRight?1:0)-(keys.ArrowLeft?1:0), yaw:(keys.KeyD?1:0)-(keys.KeyA?1:0), thr:(keys.KeyW?1:0)-(keys.KeyS?1:0)};
   for(var k in analog) if(analog[k]!==0) t[k]=analog[k];
+  var P=SIM.PAD&&SIM.PAD.out; t._p={};
+  if(P&&P.on){ ['pitch','roll','yaw','thr'].forEach(function(k){ if(t[k]===0){ t[k]=P[k]; t._p[k]=1; } }); t._abs=(t._p.thr?P.thrAbs:undefined); }
   return t;
 }
 function slew(dt){
-  var t=targetCmd(); ['pitch','roll','yaw','thr'].forEach(function(k){ var r=(t[k]===0)?7:3.2; var d=t[k]-cmd[k]; var m=r*dt; cmd[k]+=Math.abs(d)<m?d:Math.sign(d)*m; });
+  var t=targetCmd(); ['pitch','roll','yaw','thr'].forEach(function(k){ if(t._p[k]){ cmd[k]=t[k]; return; } var r=(t[k]===0)?7:3.2; var d=t[k]-cmd[k]; var m=r*dt; cmd[k]+=Math.abs(d)<m?d:Math.sign(d)*m; });
+  cmd.thrAbs=t._abs;
 }
 
 /* ---------- inspector (datos congelados) ---------- */
@@ -2971,6 +3153,7 @@ function toggleHelp(){
   h.querySelector('.in').innerHTML='<h2>AYUDA · CONTROLES</h2><p>Controles simplificados con el teclado. En multirrotores y helicópteros los mandos son de <b>velocidad</b> (modo GPS): al soltarlos el dron frena y mantiene la posición y la altura. Sin GNSS o con <kbd>Q</kbd> pasa a <b>ATTI</b>: los mandos inclinan el dron y el viento lo arrastra.</p>'
   +'<h4>Pilotaje</h4><table><tr><td><kbd>W</kbd> / <kbd>S</kbd></td><td>Multirrotor: subir / bajar. Ala fija: más / menos gas (el gas se mantiene).</td></tr><tr><td><kbd>A</kbd> / <kbd>D</kbd></td><td>Girar a izquierda / derecha (guiñada). En ala fija: timón de dirección.</td></tr><tr><td><kbd>↑</kbd> <kbd>↓</kbd></td><td>Multirrotor: avanzar / retroceder. Ala fija: morro abajo / morro arriba.</td></tr><tr><td><kbd>←</kbd> <kbd>→</kbd></td><td>Desplazamiento lateral. Ala fija: alabeo (inclinar para virar).</td></tr></table>'
   +'<h4>Simulación</h4><table><tr><td><kbd>Espacio</kbd> / <kbd>P</kbd></td><td>Pausa: congela todo y muestra los datos del instante (CSV, paso a paso con <kbd>N</kbd>).</td></tr><tr><td><kbd>R</kbd></td><td>Reiniciar el vuelo (mismas condiciones).</td></tr><tr><td><kbd>Esc</kbd></td><td>Hangar: cambiar dron, meteorología, escenario y radio.</td></tr><tr><td><kbd>T</kbd></td><td>Velocidad de simulación 1× / 2× / ½× / ¼×.</td></tr><tr><td><kbd>C</kbd> o <kbd>1</kbd>–<kbd>4</kbd></td><td>Cámara: a la vista · FPV · seguimiento · cenital. <kbd>Z</kbd> zoom en vista a la vista.</td></tr><tr><td><kbd>M</kbd> <kbd>+</kbd> <kbd>−</kbd></td><td>Zoom del mapa (también con la rueda).</td></tr><tr><td><kbd>I</kbd> <kbd>U</kbd> <kbd>G</kbd> <kbd>L</kbd></td><td>Inspector · ocultar paneles · estela · panel de distancias LiDAR.</td></tr><tr><td><kbd>K</kbd></td><td>Sonido sí / no (motores, viento, lluvia, impactos y avisos; sintetizado, se silencia en pausa).</td></tr></table>'
+  +'<h4>Emisora real (USB, cable o dongle)</h4><p>Conecta la emisora en modo «USB Joystick (HID)», abre la pestaña <b>Emisora real</b> del hangar y mueve un stick: se detecta sola. Elige un perfil (AETR, TAER o mando de consola), pulsa «Detectar» para asignar ejes e interruptores y «Calibrar» si hace falta. Chrome o Edge recomendados.</p>'
   +'<h4>Sistemas de a bordo</h4><table><tr><td><kbd>H</kbd></td><td>Regreso a casa (RTH) on/off. Requiere GNSS.</td></tr><tr><td><kbd>B</kbd></td><td>Aterrizaje suave asistido en el punto donde estés (también fuera de pista). Mover el acelerador lo cancela.</td></tr><tr><td><kbd>Q</kbd></td><td>Alternar GPS ↔ ATTI (multirrotores).</td></tr><tr><td><kbd>F</kbd></td><td>Provocar un fallo de motor (observa la redundancia de 3, 4, 6 y 8 rotores).</td></tr><tr><td><kbd>X</kbd></td><td>Paracaídas (si está instalado): corta motores y frena la caída.</td></tr></table>'
   +'<h4>Cómo leer los avisos</h4><p>Valores y alertas en <b style="color:#c27a00">ámbar</b> son avisos; en <b style="color:#c0272d">rojo parpadeante</b> son críticos. El mapa muestra la zona VLOS (ámbar) y el alcance teórico del enlace en espacio libre (magenta): la diferencia con la realidad es la pérdida por obstáculos, lluvia, ruido y patrón de antena.</p>'
   +'<p style="margin-top:12px"><button class="btn pri" onclick="document.getElementById(\'help\').style.display=\'none\'">Cerrar</button></p>';
@@ -2993,13 +3176,13 @@ function markOverlay(d){
   if(hangarOpen||!F) return;
   var pr=R3D.project(R3D.dronePos());
   if(SIM.camMode==='vlos'&&pr.z<1){
-    var dist=Math.max(1,Math.hypot(F.pos.x-world.home.x,F.pos.y-(world.terrainH(world.home.x,world.home.z)+1.75),F.pos.z-world.home.z));
+    var dist=Math.max(1,Math.hypot(F.pos.x-world.home.x,F.pos.y-(world.homeY+1.75),F.pos.z-world.home.z));
     var ang=F.ac.frame.dim/dist, px=ang/(R3D.camera().fov*deg)*Hh;
     var vis=Math.max(0,1-dist/Math.max(60,Math.min(wxLive.vis*1000, d.vlos*1.4)));
     if(px<26){ g.strokeStyle='#b0245d'; g.lineWidth=1.5; g.beginPath(); g.arc(pr.x,pr.y,16,0,6.3); g.stroke(); g.fillStyle='#b0245d'; g.font='11px monospace'; g.fillText(dist.toFixed(0)+' m · '+(F.agl()).toFixed(0)+' m alt',pr.x+20,pr.y+4); g.fillText('tamaño aparente '+(ang*1000).toFixed(2)+' mrad',pr.x+20,pr.y+18); }
   }
   /* marcador de casa */
-  var hv=new THREE.Vector3(world.home.x,world.terrainH(world.home.x,world.home.z)+3,world.home.z), hp=R3D.project(hv);
+  var hv=new THREE.Vector3(world.home.x,world.homeY+3,world.home.z), hp=R3D.project(hv);
   if(SIM.camMode!=='vlos'&&hp.z<1&&hp.x>0&&hp.x<W&&hp.y>0&&hp.y<Hh){ g.strokeStyle='#d99500'; g.fillStyle='#f5c842'; g.lineWidth=1.5; g.beginPath(); g.moveTo(hp.x,hp.y); g.lineTo(hp.x-6,hp.y-12); g.lineTo(hp.x+6,hp.y-12); g.closePath(); g.fill(); g.stroke(); g.fillStyle='#14283a'; g.font='bold 10px sans-serif'; g.fillText('CASA',hp.x-12,hp.y-16); }
 }
 
@@ -3016,6 +3199,7 @@ function chips(d){
   s.push('<span class="chip cams">Cám: '+cams.map(function(m,i){ var off=(m==='fpv'&&!hasCam()); return '<button type="button" data-cam="'+m+'"'+(m===SIM.camMode?' class="on"':'')+(off?' disabled title="Este dron no lleva cámara (añádela en el hangar)"':' title="Tecla '+(i+1)+'"')+'>'+({vlos:'Vista',fpv:'FPV',chase:'Seguim.',top:'Cenital'})[m]+'</button>'; }).join('')+'</span>');
   if(F.ac.kind!=='fixed') s.push('<span class="chip">Modo: <b>'+(F.rth?'RTH':(F.gpsActive?(F.holdSrc==='FLUJO'?'FLUJO ÓPTICO':'GPS'):'ATTI'))+'</b></span>');
   s.push('<span class="chip"><b>'+st+'</b></span>');
+  if(SIM.PAD.out.on) s.push('<span class="chip">Emisora <b>activa</b></span>');
   if(speed!==1) s.push('<span class="chip">Sim <b>×'+speed+'</b></span>');
   if(paused) s.push('<span class="chip p"><b>⏸ PAUSA</b> · t='+F.t.toFixed(1)+' s</span>');
   var c=$('chips'), h=s.join(''); if(c._h!==h){ c.innerHTML=h; c._h=h; }
@@ -3059,7 +3243,7 @@ function frame(ts){
   }
   R3D.update(F,paused?0:dtR*speed,ropts());
   glareTick();
-  { var hp0=F.world.home, ddx=F.pos.x-hp0.x, ddy=F.pos.y-(F.world.terrainH(hp0.x,hp0.z)+1.7), ddz=F.pos.z-hp0.z; AUD.update(F,{paused:paused,cam:SIM.camMode,dist:Math.sqrt(ddx*ddx+ddy*ddy+ddz*ddz),rain:wxLive?wxLive.rain:0}); }
+  { var hp0=F.world.home, ddx=F.pos.x-hp0.x, ddy=F.pos.y-(F.world.homeY+1.7), ddz=F.pos.z-hp0.z; AUD.update(F,{paused:paused,cam:SIM.camMode,dist:Math.sqrt(ddx*ddx+ddy*ddy+ddz*ddz),rain:wxLive?wxLive.rain:0}); }
   if(ts-lastHud>80){
     lastHud=ts;
     var d=H.data(F,world,wxLive);
