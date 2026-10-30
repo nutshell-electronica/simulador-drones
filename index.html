@@ -1353,6 +1353,8 @@ SW.LIST = [
  {id:'montana', name:'Montaña (1800 m)', tag:'Relieve y altura', wx:'racheado', desc:'Valle encajonado con crestas de hasta 260 m. Aire poco denso (altitud de densidad alta), ascendentes de ladera, rachas y sombra radioeléctrica tras la cresta.'},
  {id:'costa', name:'Costa y parque eólico', tag:'Mar y viento', wx:'viento', desc:'Playa con bañistas, faro, buque y aerogeneradores en el mar. Viento marino constante y aterrizaje en el agua = pérdida.'},
  {id:'barrio', name:'Barrio residencial (azotea)', tag:'Casas bajas · azotea', wx:'brisa', desc:'Despegas desde la azotea de un edificio de 21 m en un barrio de casas bajas (6–9 m) con algunos bloques de hasta 34 m, calles de 12 m, una plaza con gente y antenas en las azoteas. Sobrevuelo de zona urbana: normativa, personas, turbulencia entre edificios y aterrizaje sobre cualquier azotea.'},
+ {id:'muelle', name:'Puerto de Málaga · Muelle Uno', tag:'Puerto · La Farola', wx:'brisa', lat:36.7121, lon:-4.4181, desc:'Despegas en el paseo del Muelle Uno con La Farola al fondo (NE). Pabellones, yates amarrados, un crucero, el Cubo del Pompidou, el Palmeral, el centro histórico con la Catedral y Gibralfaro detrás. Agua alrededor (amerizar = pérdida) y gente en el paseo. Maqueta reconocible, no plano exacto.'},
+ {id:'guadalhorce', name:'Guadalhorce · Pasarela de madera', tag:'Humedal · Arraijanal', wx:'brisa', lat:36.6754, lon:-4.4617, desc:'Despegas sobre la pasarela de madera (≈270 m) del Paraje Natural Desembocadura del Guadalhorce: río, lagunas, carrizal, dunas y pinar del Arraijanal, el mar al sur, Guadalmar al este y la zona UAS del aeropuerto al oeste. Maqueta reconocible, no plano exacto.'},
  {id:'nave', name:'Nave industrial (interior)', tag:'Interior · LiDAR', wx:'calma', desc:'Nave de 60 × 53 × 14 m sin GNSS, con columnas, estanterías, palés y una viga. Equipa telémetros láser o un LiDAR 360° y observa las distancias a paredes y obstáculos.'},
  {id:'aeropuerto', name:'Cercanía de aeropuerto', tag:'Normativa', wx:'calma', desc:'Zona geográfica UAS restringida de 2 km de radio alrededor de la pista y tráfico tripulado cruzando. Practica el respeto del espacio aéreo.'}
 ];
@@ -1381,6 +1383,12 @@ SW.make = function(id, rngf){
     w.obstacles.push(o); w.grid.add(o); return o;
   }
   w.addObs=add;
+
+  function rgb(h){ return [((h>>16)&255)/255,((h>>8)&255)/255,(h&255)/255]; }
+  function initShapes(baseWater){ w.shapes=[]; w.shapeAt=function(x,z){ var L=w.shapes; for(var i=L.length-1;i>=0;i--){ var q=L[i], dx=x-q.x, dz=z-q.z, lx=q.cs*dx-q.sn*dz, lz=q.sn*dx+q.cs*dz;
+      if(!q.ell){ if(Math.abs(lx)<=q.w/2&&Math.abs(lz)<=q.d/2) return q; } else { var u=lx/(q.w/2), v=lz/(q.d/2); if(u*u+v*v<=1) return q; } } return null; }; w.baseWater=baseWater; }
+  function shp(x,z,wd,dp,hex,opt){ var q={x:x,z:z,w:wd,d:dp,rot:(opt&&opt.rot)||0,hex:hex,c:rgb(hex),water:!!(opt&&opt.water),ell:!!(opt&&opt.ell)}; q.cs=Math.cos(q.rot); q.sn=Math.sin(q.rot); w.shapes.push(q); return q; }
+  function seg(x0,z0,x1,z1,wd,hex,opt){ var dx=x1-x0, dz=z1-z0, len=Math.hypot(dx,dz); var o=Object.assign({rot:Math.atan2(dx,dz)},opt||{}); return shp((x0+x1)/2,(z0+z1)/2,wd,len+2,hex,o); }
 
   if(id==='campo'){
     w.elev=50; w.rough=0.12;
@@ -1435,6 +1443,100 @@ SW.make = function(id, rngf){
     w.zones.push({type:'crowd',x:0,z:-192,r:22,label:'Plaza con terrazas y gente',color:0xd9342b});
     w.zones.push({type:'urban',x:0,z:-280,r:560,label:'Zona urbana / residencial',color:0xe0a82e});
     w.plaza={x:0,z:-192,r:21};
+  }
+  else if(id==='muelle'){
+    w.elev=2; w.rough=0.16; w.rfNoise=4; w.startHeading=55; w.mapExt=1100; w.mapZoom=450; w.ground='urban';
+    var gib=function(x,z){ return 130*Math.exp(-((x-750)*(x-750)+(z+1200)*(z+1200))/(2*230*230)); };
+    var alc=function(x,z){ return 48*Math.exp(-((x-280)*(x-280)+(z+1045)*(z+1045))/(2*100*100)); };
+    land=function(x,z){ return gib(x,z)+alc(x,z)+520*ss(-1800,-3000,z)*(0.65+0.35*Math.sin(x/420+1)); };
+    initShapes(true);
+    pal=function(x,z,h){ if(h>3) return [0.45,0.52,0.31]; var s=w.shapeAt(x,z); return s?s.c:[0.18,0.50,0.65]; };
+    shp(0,-1500,6000,2500,0xaaa598);                       /* ciudad */
+    shp(-100,-325,900,34,0x86a866);                         /* Paseo del Parque */
+    shp(0,-284,6000,16,0x3d4046);                           /* avenida */
+    shp(0,-40,76,420,0xd2c9b4);                             /* Muelle Uno */
+    shp(0,-40,16,400,0xb5895a);                             /* paseo de madera */
+    shp(-175,-70,72,360,0xc9c2b0);                          /* Muelle Dos */
+    shp(-175,-70,44,320,0x7aa55a);                          /* Palmeral de las Sorpresas */
+    shp(330,-110,64,280,0xc9c2b0);                          /* Muelle de Levante / Paseo de la Farola */
+    shp(330,-110,10,270,0xb5895a);
+    shp(1050,-262,1400,24,0xe6d6a0);                        /* playa de La Malagueta */
+    /* edificios del puerto */
+    for(var zz=-225;zz<=110;zz+=50){ add('box',-27,zz,14,38,7,'un pabellón comercial',0xf4f1e8); add('box',27,zz,14,38,7,'un pabellón comercial',0xf4f1e8); }
+    add('box',0,128,22,22,18,'el Cubo del Centre Pompidou',0x4f86d6);
+    add('box',0,128,8,8,3,'el Cubo (cubierta)',0xe85a4f,{lift:18});
+    for(var zz=-230;zz<=100;zz+=22){ add('tree',-13,zz,1.8,0,9+rnd()*2,'una palmera',0x3f7a3a); add('tree',13,zz,1.8,0,9+rnd()*2,'una palmera',0x3f7a3a); }
+    for(var zz=-235;zz<=70;zz+=18){ add('tree',-187,zz,1.8,0,9+rnd()*2,'una palmera',0x3f7a3a); add('tree',-163,zz,1.8,0,9+rnd()*2,'una palmera',0x3f7a3a); }
+    /* embarcaciones amarradas */
+    for(var zz=-200;zz<=100;zz+=30){
+      add('box',-47,zz+rnd()*6,5,15,3.2,'un yate',0xf5f5f5); add('cyl',-47,zz+rnd()*6,0.15,0,15,'un mástil',0xcfd3d6,{solid:true,lift:3.2});
+      add('box',-136,zz+8+rnd()*6,5,13,3,'un yate',0xeceff1);
+    }
+    /* crucero atracado */
+    add('box',272,-60,30,230,9,'el casco del crucero',0x233247);
+    add('box',272,-70,28,200,21,'un crucero',0xf1f3f5,{lift:9});
+    add('box',272,-150,20,34,7,'el puente del crucero',0xe3e7ea,{lift:30});
+    add('cyl',272,-30,3,0,9,'la chimenea del crucero',0xd8503f,{solid:true,lift:30});
+    /* La Farola */
+    add('box',330,-235,16,16,9,'la base de La Farola',0xe9dfc8);
+    add('cyl',330,-235,4.4,0,27,'La Farola',0xece3cf,{solid:true,lift:9});
+    add('cyl',330,-235,5.4,0,1.2,'la galería de La Farola',0xb9b4a4,{solid:true,lift:35});
+    add('cyl',330,-235,2.7,0,4,'la linterna de La Farola',0x9fb0be,{solid:true,lift:36.2});
+    add('cyl',330,-235,3.2,0,1,'el techo de La Farola',0x55595e,{solid:true,lift:40.2});
+    /* centro histórico */
+    for(var i=-9;i<=9;i++) for(var j=0;j<=6;j++){
+      var cx=i*95+(rnd()-0.5)*8, cz=-380-j*85+(rnd()-0.5)*8;
+      if(Math.abs(cx+160)<85&&Math.abs(cz+845)<80) continue;
+      if(land(cx,cz)>6) continue;
+      var hh=13+rnd()*rnd()*28, c2=[0xe9dfc9,0xd9c5a6,0xcfd5da,0xe2c7b6,0xf0ead8][Math.floor(rnd()*5)];
+      add('box',cx,cz,50+rnd()*8,44+rnd()*8,hh,'un edificio de '+Math.round(hh)+' m',c2);
+    }
+    add('box',-160,-845,64,92,32,'la Catedral',0xd8cdb0);
+    add('box',-182,-815,15,15,86,'la torre de la Catedral',0xd2c6a6);
+    add('box',262,-1042,92,52,14,'la Alcazaba',0xd6b98a);
+    add('box',312,-1062,30,26,24,'la torre de la Alcazaba',0xcfae7c);
+    add('box',750,-1200,64,30,10,'el castillo de Gibralfaro',0xcdb48a);
+    w.zones.push({type:'crowd',x:0,z:-60,r:42,label:'Paseo del Muelle Uno con público',color:0xd9342b});
+    w.zones.push({type:'urban',x:0,z:-720,r:650,label:'Zona urbana (centro histórico)',color:0xe0a82e});
+    w.isWater=function(x,z){ var s=w.shapeAt(x,z); return s?!!s.water:true; };
+    w.plaza=null;
+  }
+  else if(id==='guadalhorce'){
+    w.elev=3; w.rough=0.10; w.rfNoise=0; w.startHeading=-90; w.mapExt=1100; w.mapZoom=450;
+    var rx=function(z){ return 25*Math.sin(z/300); };
+    land=function(x,z){ return 2.8*ss(420,720,z)*ss(150,300,Math.abs(x))*(0.5+0.5*Math.sin(x/70)*Math.cos(z/55)); };
+    initShapes(false);
+    pal=function(x,z,h){ var s=w.shapeAt(x,z); return s?s.c:[0.58,0.56,0.36]; };
+    shp(0,2300,7000,3000,0x2f7fa6,{water:true});            /* mar */
+    shp(0,800,7000,50,0xe3d3a1);                            /* playa */
+    shp(520,-80,1040,840,0x7f9a52,{ell:1});                  /* Arraijanal: matorral y arbolado */
+    shp(500,650,1400,280,0xd9c68f,{ell:1});                  /* dunas */
+    shp(-500,620,1200,240,0xd9c68f,{ell:1});
+    shp(0,0,470,520,0x7e9650,{ell:1});                       /* llanura de inundación */
+    shp(340,-170,230,130,0x6f8f46,{ell:1}); shp(340,-170,190,100,0x3c88a8,{ell:1,water:true});   /* Laguna Grande */
+    shp(330,150,150,90,0x6f8f46,{ell:1});  shp(330,150,120,60,0x3c88a8,{ell:1,water:true});
+    shp(-330,230,180,105,0x6f8f46,{ell:1}); shp(-330,230,140,75,0x3c88a8,{ell:1,water:true});
+    shp(-260,-300,130,75,0x6f8f46,{ell:1}); shp(-260,-300,100,55,0x3c88a8,{ell:1,water:true});
+    for(var zz=-1500;zz<790;zz+=60){ var wd=44+(zz>500?(zz-500)*0.17:0); seg(rx(zz),zz,rx(zz+60),zz+60,wd,0x3a7f9e,{water:true}); }   /* río Guadalhorce */
+    seg(135,0,420,-40,4,0xcdb98a); seg(420,-40,700,60,4,0xcdb98a); seg(400,-40,380,500,4,0xcdb98a); seg(-600,740,700,740,5,0xcdb98a);
+    shp(1150,50,520,520,0xb7b3a6);                          /* Guadalmar */
+    w.isWater=function(x,z){ var s=w.shapeAt(x,z); return s?!!s.water:false; };
+    /* pasarela de madera (≈ 270 m) */
+    add('box',0,0,270,3.2,0.5,'la pasarela de madera',0xa8774a,{lift:3.8,roof:true});
+    w.decor=[];
+    for(var px=-135;px<=135;px+=18) [-1.2,1.2].forEach(function(o){ w.decor.push({x:px,y:1.9,z:o,sx:0.5,sy:3.8,sz:0.5,color:0x6b4a2a}); });
+    [-1.55,1.55].forEach(function(o){ w.decor.push({x:0,y:4.85,z:o,sx:270,sy:1.1,sz:0.1,color:0x8a5d33}); w.decor.push({x:0,y:5.4,z:o,sx:270,sy:0.1,sz:0.2,color:0xb98a5a}); });
+    for(var px=-135;px<=135;px+=9) [-1.55,1.55].forEach(function(o){ w.decor.push({x:px,y:4.85,z:o,sx:0.15,sy:1.1,sz:0.15,color:0x6b4a2a}); });
+    w.home={x:120,z:0};
+    /* vegetación */
+    for(var i=0;i<260;i++){ var tx=140+rnd()*820, tz=-420+rnd()*900; if(w.isWater(tx,tz)||w.shapeAt(tx,tz)&&w.shapeAt(tx,tz).hex===0x6f8f46) continue; var pine=rnd()<0.55; add('tree',tx,tz,pine?3:3.5,0,pine?12+rnd()*8:15+rnd()*7,pine?'un pino':'un eucalipto',pine?0x2f5a30:0x5a7f4a); }
+    for(var i=0;i<140;i++){ var tx=(rnd()-0.5)*560, tz=(rnd()-0.5)*620; if(w.isWater(tx,tz)||Math.abs(tz)<8&&Math.abs(tx)<145) continue; add('tree',tx,tz,1.8,0,3.5+rnd()*3,'un tarajal',0x6b8f4b); }
+    add('box',410,-70,6,5,4.5,'el observatorio de aves',0x7a5a3a);
+    add('box',300,778,12,8,4,'el chiringuito',0xe8d4a6);
+    for(var gx=930;gx<=1370;gx+=40) for(var gz=-190;gz<=300;gz+=36){ if(rnd()<0.35) continue; var hh=5+rnd()*3; add('box',gx+(rnd()-0.5)*5,gz+(rnd()-0.5)*5,14,11,hh,'una casa de '+Math.round(hh)+' m',[0xf4f1e8,0xefe3cc,0xe8dcc8][Math.floor(rnd()*3)]); }
+    w.zones.push({type:'urban',x:1150,z:50,r:330,label:'Núcleo urbano de Guadalmar',color:0xe0a82e});
+    w.zones.push({type:'restricted',x:-3300,z:-250,r:2000,label:'ZONA UAS · Aeropuerto de Málaga (aprox. didáctica)',color:0xd9342b,maxAlt:0});
+    w.traffic={path:'x',z:-420,alt:110,speed:55,len:3200,label:'una aeronave tripulada'};
   }
   else if(id==='bosque'){
     w.elev=400; w.rough=0.26;
@@ -1834,6 +1936,7 @@ function disposeGroup(g){
 }
 function canvasTex(w,h,fn,rep){ var c=document.createElement('canvas'); c.width=w; c.height=h; fn(c.getContext('2d'),w,h); var t=new THREE.CanvasTexture(c); if(rep){t.wrapS=t.wrapT=THREE.RepeatWrapping;} t.anisotropy=4; return t; }
 
+function lin(v){ return v<=0.04045?v/12.92:Math.pow((v+0.055)/1.055,2.4); }
 R3D.loadWorld=function(w){
   world=w; disposeGroup(S.worldGroup); dyn=[]; trailPts=[];
   var G=S.worldGroup, EXT=SW.EXT;
@@ -1844,10 +1947,14 @@ R3D.loadWorld=function(w){
   var pa=geo.attributes.position, col=new Float32Array(pa.count*3);
   for(var i=0;i<pa.count;i++){
     var x=pa.getX(i), z=pa.getZ(i), h=w.land(x,z); pa.setY(i,h);
-    var c=w.pal(x,z,h); col[i*3]=c[0]; col[i*3+1]=c[1]; col[i*3+2]=c[2];
+    var c=w.pal(x,z,h); if(w.shapes) c=[lin(c[0]),lin(c[1]),lin(c[2])]; col[i*3]=c[0]; col[i*3+1]=c[1]; col[i*3+2]=c[2];
   }
   geo.setAttribute('color',new THREE.BufferAttribute(col,3)); geo.computeVertexNormals();
   G.add(new THREE.Mesh(geo,new THREE.MeshLambertMaterial({vertexColors:true})));
+  if(w.shapes){ w.shapes.forEach(function(q,i){
+    var g=q.ell?new THREE.CircleGeometry(1,48):new THREE.PlaneGeometry(1,1); g.rotateX(-Math.PI/2);
+    var m=new THREE.Mesh(g,new THREE.MeshLambertMaterial({color:q.hex,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-2}));
+    m.scale.set(q.ell?q.w/2:q.w,1,q.ell?q.d/2:q.d); m.rotation.y=q.rot; m.position.set(q.x,0.04+i*0.003,q.z); m.renderOrder=1+i; G.add(m); }); }
   if(w.sea){ var sg=new THREE.PlaneGeometry(EXT*2,EXT*2); sg.rotateX(-Math.PI/2);
     var sea=new THREE.Mesh(sg,new THREE.MeshLambertMaterial({color:0x2f7fa6,transparent:true,opacity:0.82})); sea.position.y=0.02; G.add(sea); }
   /* decales */
@@ -2280,7 +2387,7 @@ SIM.mapRaster=function(w,N,ext){
   w.zones.forEach(function(z){ g.strokeStyle='#d9342b'; g.fillStyle='rgba(217,52,43,0.12)'; g.lineWidth=1.5; g.beginPath(); g.arc(px(z.x),px(z.z),z.r/step,0,6.3); g.fill(); g.stroke(); });
   return {canvas:c,ext:ext,step:step};
 };
-var SCN_EXT={campo:700,ciudad:900,barrio:700,bosque:1300,montana:1600,costa:1300,nave:60,aeropuerto:3000};
+var SCN_EXT={campo:700,ciudad:900,barrio:700,bosque:1300,montana:1600,costa:1300,nave:60,aeropuerto:3000,muelle:1100,guadalhorce:1100};
 SIM.SCN_EXT=SCN_EXT;
 
 /* ---------- construcción del hangar ---------- */
@@ -2491,7 +2598,8 @@ function wire(){
   $('oKites').oninput=function(){ ST.kites=+$('oKites').value; $('oKitesV').textContent=ST.kites?ST.kites+' / 10':'sin cometas'; SIM.save(); };
   $('oPeople').onchange=function(){ ST.people=$('oPeople').checked; SIM.save(); };
   $('wxSl').oninput=function(e){ var k=e.target.dataset.w; if(!k) return; var v=parseFloat(e.target.value); if(k==='elev') ST.elevOv=v; else ST.wx[k]=v; ST.wxId='custom'; e.target.parentNode.querySelector('span').textContent=(k==='vis'?v.toFixed(1):v); document.querySelectorAll('#wxPre .btn').forEach(function(b){b.classList.remove('on');}); SIM.validate(); SIM.save(); };
-  $('scnList').onclick=function(e){ var d=e.target.closest('.sc'); if(!d) return; ST.scn=d.dataset.id; ST.elevOv=null; var m=SW.LIST.filter(function(x){return x.id===ST.scn;})[0]; if(ST.wxId!=='custom'||true){ ST.wxId=m.wx; ST.wx=Object.assign({},SD.WX[m.wx]); } syncCtrls(); syncAfter(); };
+  $('scnList').onclick=function(e){ var d=e.target.closest('.sc'); if(!d) return; ST.scn=d.dataset.id; ST.elevOv=null; var m=SW.LIST.filter(function(x){return x.id===ST.scn;})[0]; var DEF=[36.7770,-4.3930], pre=SW.LIST.filter(function(x){return x.lat;}).map(function(x){return [x.lat,x.lon];}); pre.push(DEF); if(pre.some(function(p){return Math.abs(p[0]-ST.lat)<1e-6&&Math.abs(p[1]-ST.lon)<1e-6;})){ var t=m.lat?[m.lat,m.lon]:DEF; ST.lat=t[0]; ST.lon=t[1]; syncTime(); }
+    if(ST.wxId!=='custom'||true){ ST.wxId=m.wx; ST.wx=Object.assign({},SD.WX[m.wx]); } syncCtrls(); syncAfter(); };
   $('oJam').onchange=chg(function(){ ST.jam=$('oJam').checked; });
   $('oNoise').oninput=chg(function(){ ST.rfNoise=+$('oNoise').value; $('oNoiseV').textContent='+'+ST.rfNoise+' dB'; });
   $('oTrail').onchange=chg(function(){ ST.trail=$('oTrail').checked; });
@@ -3169,7 +3277,7 @@ function newFlight(){
   timeSetup();
   F=new SM.Flight(V.ac,world,wxLive,stFromUI());
   R3D.loadWorld(world); R3D.buildDrone(V.ac); R3D.setWeather(wxLive,ST.tod,world.sun);
-  H.setRaster(SIM.mapRaster(world,512,world.mapExt||SW.EXT)); H.setZoom(world.mapExt?45:1000);
+  H.setRaster(SIM.mapRaster(world,512,world.mapExt||SW.EXT)); H.setZoom(world.mapZoom||(world.mapExt?45:1000));
   sig=sigNow();
   var cam=SIM.camMode; if(cam==='fpv' && !hasCam()) cam='vlos'; setCam(cam);
   keysPanel(); resetCommon(); return true;

@@ -24,9 +24,16 @@ Simulador de drones que funciona en el navegador, sin instalar nada y sin conexi
 
 **Escenarios**
 - Campo, ciudad, bosque, montaña, costa, aeropuerto, nave industrial (interior, sin GNSS) y barrio residencial con despegue desde una azotea.
+- **Lugares reconocibles de Málaga** (maquetas simplificadas, con las coordenadas GPS de partida correspondientes):
+  - **Puerto de Málaga · Muelle Uno**, con La Farola al fondo, yates, un crucero, el Cubo del Pompidou, el Palmeral, la Catedral y Gibralfaro.
+  - **Guadalhorce · pasarela de madera** del Paraje Natural, con río, lagunas, dunas y pinar del Arraijanal, el mar al sur y la zona UAS del aeropuerto al oeste.
 - En interior, sensores ToF, LiDAR 2D y flujo óptico.
 
 ![Escenarios disponibles](img/escenarios.png)
+
+![Muelle Uno de Málaga con La Farola al fondo](img/muelle-farola.png)
+
+![Pasarela de madera del Guadalhorce](img/guadalhorce-pasarela.png)
 
 **Cuatro cámaras**: a la vista (VLOS), FPV, seguimiento y cenital, con mapa y HUD.
 
