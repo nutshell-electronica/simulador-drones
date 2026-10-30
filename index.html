@@ -2510,6 +2510,7 @@ var PRE={
 var cfg={on:true,dz:0.04,expo:0,padId:'',map:JSON.parse(JSON.stringify({thr:PRE.aetr.thr,yaw:PRE.aetr.yaw,pitch:PRE.aetr.pitch,roll:PRE.aetr.roll})),aux:{}};
 try{ var sv=JSON.parse(localStorage.getItem('santsim_pad')||'null'); if(sv&&sv.map) cfg=Object.assign(cfg,sv); }catch(e){}
 function save(){ try{ localStorage.setItem('santsim_pad',JSON.stringify(cfg)); }catch(e){} }
+cfg.seen=cfg.seen||{};
 var cur=null, snap=null, touched=false, learn=null, cal=null, prevAux={}, lastKey='', rawAx=[], rawBt=[];
 
 function list(){ var g=(navigator.getGamepads?navigator.getGamepads():[])||[], r=[]; for(var i=0;i<g.length;i++) if(g[i]&&g[i].connected&&g[i].axes&&g[i].axes.length>=2) r.push(g[i]); return r; }
@@ -2530,7 +2531,11 @@ function auxState(d,g){ if(!d) return false; if(d.t==='b') return !!(g.buttons[d
 function poll(){
   var l=list(), g=pick(l); cur=g;
   if(!g){ PAD.out.on=false; PAD.out.thrAbs=undefined; snap=null; touched=false; PAD.state=l.length?'':'none'; draw(); return; }
-  if(!snap||snap.id!==g.id){ snap={id:g.id,ax:g.axes.slice()}; touched=false; render(); }
+  if(!snap||snap.id!==g.id){ snap={id:g.id,ax:g.axes.slice()}; touched=false;
+    if(!cfg.seen[g.id]){   /* primera vez que se ve este dispositivo: perfil probable según su nombre */
+      var pre=/spektrum|ws2000|ws1000|horizon|dsm/i.test(g.id)?'taer':(g.mapping==='standard'?'xbox':'aetr');
+      for(var kk in FN) cfg.map[kk]=JSON.parse(JSON.stringify(PRE[pre][kk])); cfg.seen[g.id]=pre; PAD.autoPre=pre; save(); }
+    render(); }
   rawAx=g.axes; rawBt=g.buttons;
   var i; if(!touched){ for(i=0;i<g.axes.length;i++) if(Math.abs(g.axes[i]-snap.ax[i])>0.12){ touched=true; break; } if(!touched) for(i=0;i<g.buttons.length;i++) if(g.buttons[i].pressed){ touched=true; break; } }
   /* aprendizaje de ejes / interruptores */
@@ -2564,8 +2569,10 @@ function render(){
   if(!l.length){
     h+='<div class="note" style="margin-top:0"><b>No se detecta ninguna emisora.</b> Conéctala por USB (en el menú de la radio elige modo <b>«USB Joystick (HID)»</b>), o usa un cable de simulador / dongle y <b>mueve un stick o pulsa un botón</b>: el navegador no la muestra hasta que recibe algo. Con Chrome o Edge, mejor.</div>';
   } else {
+    if(PAD.autoPre&&g) h+='<div class="note" style="margin-top:0">Perfil aplicado al detectarla: <b>'+PRE[PAD.autoPre].name+'</b>. Comprueba que los ejes se mueven como esperas y, si no, pulsa otro perfil o «Detectar».</div>';
     h+='<div class="row"><label>Dispositivo</label><select id="padSel">'+l.map(function(p){ return '<option value="'+p.index+'"'+(g&&p.index===g.index?' selected':'')+'>'+p.id.replace(/</g,'')+'</option>'; }).join('')+'</select></div>';
   }
+  h+='<details style="margin:6px 0"><summary style="cursor:pointer;font-size:12px;font-weight:600">Cómo conectar una RadioMaster TX16S (EdgeTX)</summary><div class="note"><b>A) Cable USB-C:</b> enciende la radio, conéctala y elige <b>«USB Joystick (HID)»</b>. Los canales salen en orden: CH1→Eje 1, CH2→Eje 2, CH3→Eje 3, CH4→Eje 4… (CH5–CH8 los interruptores). El orden depende de cómo tengas el modelo (AETR, TAER…): si no coincide, pulsa «Detectar».<br><b>B) Dongle Spektrum (WS1000/WS2000):</b> en el modelo activa el módulo interno <b>MULTI → DSM → DSMX</b>; enchufa el dongle con su botón pulsado (LED naranja parpadeando) y pon la radio en modo bind; LED fijo = enlazado. Spektrum envía los canales en orden <b>TAER</b> (gas, alabeo, cabeceo, timón), que es el perfil que se aplica solo.</div></details>';
   h+='<label class="chk"><input type="checkbox" id="padOn"'+(cfg.on?' checked':'')+'><div>Usar la emisora para volar<small>Se activa cuando mueves un mando. El teclado y la pantalla táctil siguen funcionando si no tocas la emisora.</small></div></label>';
   h+='<div class="note" id="padState"></div>';
   if(g){
