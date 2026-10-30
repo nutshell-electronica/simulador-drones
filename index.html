@@ -237,6 +237,10 @@ table.bud{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:
       <div class="pg on" id="pg0">
         <div class="cols">
           <div>
+            <div class="card"><h3>Modelo</h3><div class="bd">
+              <div class="row"><label>Aeronave</label><select id="cComm"></select></div>
+              <div class="note" id="commHint" style="margin-top:0"></div>
+            </div></div>
             <div class="card"><h3>Plataforma</h3><div class="bd">
               <div class="row"><label>Tipo de aeronave</label><select id="cType"></select></div>
               <div class="row"><label>Bastidor</label><select id="cFrame"></select></div>
@@ -256,6 +260,7 @@ table.bud{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:
             </div></div>
           </div>
           <div>
+            <div class="card" id="commCard" style="display:none"><h3>Ficha del fabricante</h3><div class="bd" id="commBody"></div></div>
             <div class="card"><h3>Prestaciones calculadas (atmósfera estándar)</h3><div class="bd"><div class="stats" id="stats"></div><ul class="val-list" id="valList"></ul></div></div>
           </div>
         </div>
@@ -507,9 +512,11 @@ SM.propCoef = function(Din,P){
 
 /* Construye el objeto de aeronave a partir de la configuración */
 SM.build = function(cfg){
-  var type = D_.byId(D_.TYPES,cfg.type), fr = D_.byId(D_.FRAMES,cfg.frame), mo = D_.byId(D_.MOTORS,cfg.motor);
-  var ch = D_.byId(D_.CHEM,cfg.chem);
-  var ac = {cfg:cfg, type:type, kind:type.kind, rotors:type.rotors, frame:fr, motor:mo, chem:ch};
+  var cm = cfg.comm&&D_.COMM?D_.byId(D_.COMM,cfg.comm):null;
+  var type = D_.byId(D_.TYPES,cm?cm.type:cfg.type), fr = cm?cm.frame:D_.byId(D_.FRAMES,cfg.frame), mo = cm?cm.motor:D_.byId(D_.MOTORS,cfg.motor);
+  var ch = cm?cm.chem:D_.byId(D_.CHEM,cfg.chem);
+  if(cm){ cfg.prop=cm.prop; cfg.cells=cm.cells; cfg.cap=cm.cap; cfg.esc=cm.esc; cfg.type=cm.type; }
+  var ac = {cm:cm, cfg:cfg, type:type, kind:type.kind, rotors:type.rotors, frame:fr, motor:mo, chem:ch};
   if(ac.kind==='heli'){
     ac.D = fr.fixedProp; ac.Din = ac.D/0.0254; ac.P = 0; ac.propMass = 0;
     ac.nHeli = fr.tipSpeed/(Math.PI*ac.D);
@@ -525,7 +532,7 @@ SM.build = function(cfg){
   ac.battCmax = ac.battAh*ch.c;
   ac.rcell = 0.5/(ac.battAh*ch.c);
   ac.accs = []; ac.accMass=0; ac.accW=0; ac.accCd=0;
-  (cfg.acc||[]).forEach(function(id){ var a=D_.byId(D_.ACC,id); if(a){ac.accs.push(a); ac.accMass+=a.m; ac.accW+=a.w; ac.accCd+=a.cdA;} });
+  (cfg.acc||[]).forEach(function(id){ var a=D_.byId(D_.ACC,id); if(a){ac.accs.push(a); if(cm&&cm.builtin.indexOf(id)>=0) return; ac.accMass+=a.m; ac.accW+=a.w; ac.accCd+=a.cdA;} });
   ac.has = function(id){ return (cfg.acc||[]).indexOf(id)>=0; };
   ac.payMass = (cfg.pay||0)/1000;
   ac.avW = 3 + (ac.kind==='multi'?0.5*ac.rotors:1);        /* aviónica y controladora */
@@ -533,6 +540,8 @@ SM.build = function(cfg){
   ac.nMotors = nm;
   ac.mass = fr.m + nm*(mo.m + ac.propMass + (ac.kind==='heli'?0:ac.escMass)) + (ac.kind==='heli'?ac.escMass:0)
           + ac.battMass + ac.accMass + ac.payMass;
+  if(cm) ac.mass = cm.mass + ac.accMass + ac.payMass;
+  ac.pK = cm?cm.pK:1; ac.spec = cm?cm.spec:null; if(cm) ac.avW = cm.avW;
   ac.W = ac.mass*G;
   ac.cdA = fr.cdA + ac.accCd;
   ac.effM = 0.82; ac.effE = 0.94;
@@ -548,7 +557,7 @@ SM.rotorPower = function(ac,T,rho){
     return {n:n, P:(pind+pprof)*1.08};
   }
   var n = Math.sqrt(Math.max(T,0)/(ac.ct*rho*Math.pow(ac.D,4)));
-  return {n:n, P:ac.cp*rho*n*n*n*Math.pow(ac.D,5)};
+  return {n:n, P:ac.cp*rho*n*n*n*Math.pow(ac.D,5)*(ac.pK||1)};
 };
 
 /* Empuje máximo por rotor (N) con tensión V bajo carga y densidad rho */
@@ -632,10 +641,136 @@ SM.validate = function(cfg){
   if(ac.has('lidar') && !ac.has('rtk')) W.push('LiDAR sin GNSS RTK: el mapeo tendrá error de posición de varios metros.');
   if(!ac.has('rid') && m>=0.25) W.push('Sin identificación remota (obligatoria en clases C1–C3 de la UE).');
   if(ac.chem.id==='liion' && Itot>ac.battCmax*0.7) W.push('Li-ion con descarga exigente: hundimiento de tensión notable.');
+  if(ac.cm){ E=E.filter(function(e){ return /Carga útil/.test(e); }); W=W.filter(function(w){ return /Sin cámara|Autonomía/.test(w)===false && /RTK|identificación/i.test(w)===false; }); I.cat=ac.cm.eu; I.comm=ac.cm; }
   return {ac:ac, errors:E, warns:W, info:I};
 };
 if(typeof module!=='undefined') module.exports=SM;
 })();
+
+/* ===== AERONAVES COMERCIALES: ficha del fabricante + equivalente físico calibrado ===== */
+/* Cada modelo guarda (a) los datos PUBLICADOS por el fabricante (pub) y (b) los parámetros que el simulador necesita y el
+   fabricante no publica (hélice, motor, ...): se calculan para que masa, batería, autonomía y velocidad máxima coincidan con la ficha. */
+(function(){
+var deg=Math.PI/180, G=SD.G, RHO=1.225;
+SD.COMM=[];
+function dimsOf(s){ return SD.propDims(s); }
+
+/* r = datos de partida; devuelve el modelo ya calibrado */
+function make(r){
+  var Vn=r.cells*r.vc, nm=r.type==='quad'?4:1;
+  var cm={id:r.id,maker:r.maker,name:r.name,type:r.type,mass:r.mass,cells:r.cells,cap:r.cap,esc:r.esc||60,prop:r.prop,
+    builtin:r.builtin||[],allowAcc:!!r.allowAcc,allowPay:!!r.allowPay,eu:r.eu,pub:r.pub,est:r.est||[],src:r.src||[],note:r.note||'',
+    ap:r.ap||null,avW:r.avW||1.5,pK:1};
+  var battMass=r.battMass, Wh=r.Wh;
+  cm.chem={id:'c-'+r.id,name:r.chemName,vc:r.vc,wh:Wh/battMass,c:r.cr||8,hi:false};
+  cm.cap=Math.round(Wh/Vn*1000);                     /* mAh equivalentes a la tensión nominal usada */
+  var pd=dimsOf(r.prop), ct=SM.propCoef(pd.Din,pd.P).ct;
+  if(r.type==='quad'){
+    var W=r.mass*G, Teach=r.twr*W/nm, n=Math.sqrt(Teach/(ct*RHO*Math.pow(pd.D,4))), kv=n*60/(0.72*Vn*1.05);
+    var tilt=r.tilt, vm=r.vmax, cdA=0.84*r.mass*G*Math.tan(r.tiltV*deg)/(0.5*RHO*vm*vm);
+    cm.motor={id:'m-'+r.id,name:'Motor equivalente · '+Math.round(kv)+' KV',kv:kv,m:r.motorMass,imax:999,maxS:r.cells+2};
+    cm.frame={id:'f-'+r.id,type:'quad',name:r.name,m:0.01,dim:r.dim,maxProp:pd.Din+0.5,maxPay:r.allowAcc?r.maxPay:0,cdA:cdA,maxWind:r.wind,tilt:tilt,yawRate:r.yaw};
+    cm.spec={vmax:r.vmax,vUp:r.vUp,vDn:r.vDn,ceiling:r.ceiling};
+  } else {
+    var fw=r.fw; var Tstat=r.tstat*r.mass*G;
+    var nmx=r.vpTarget/(0.0254*pd.P*0.85), kvf=nmx*60/(0.72*Vn*1.05);   /* rpm tales que la hélice da la velocidad máxima publicada con margen */
+    cm.motor={id:'m-'+r.id,name:'Motor equivalente · '+Math.round(kvf)+' KV',kv:kvf,m:r.motorMass,imax:999,maxS:r.cells+2};
+    cm.frame={id:'f-'+r.id,type:'fw-long',name:r.name,m:0.01,dim:fw.b,b:fw.b,S:fw.S,CL0:fw.CL0,CLa:fw.CLa,CD0:fw.CD0,e:fw.e,aMax:fw.aMax,maxProp:pd.Din+0.5,maxPay:0,cdA:0,maxWind:r.wind,vne:fw.vne};
+    cm.spec={vmax:fw.vne,ceiling:r.ceiling};
+  }
+  SD.COMM.push(cm);
+  /* calibración de potencia: la autonomía en estacionario (o crucero) del simulador = la publicada */
+  var cfg=SD.commCfg(cm), ac=SM.build(cfg), pa=ac.avW+ac.accW;
+  if(r.type==='quad'){
+    var Th=ac.W/ac.nMotors, hp=SM.rotorPower(ac,Th,RHO).P, Ptgt=Wh*60/r.tHover;
+    cm.pK=Math.max(0.2,(Ptgt-pa)*(ac.effM*ac.effE)/(ac.nMotors*hp));
+  } else { cm.pK=r.pK||1; }
+  cm.tHover=r.tHover;
+  return cm;
+}
+
+/* cfg estándar de un modelo comercial (la entrada de SM.build) */
+SD.commCfg=function(cm,old){
+  return {type:cm.type,comm:cm.id,frame:cm.frame.id,motor:cm.motor.id,prop:cm.prop,esc:cm.esc,chem:cm.chem.id,cells:cm.cells,cap:cm.cap,
+          acc:cm.builtin.slice(),pay:0};
+};
+
+/* ---------------- datos (ficha del fabricante) ---------------- */
+var SRC_DJI=function(u,t){ return {t:t,u:u}; };
+
+make({id:'tello',maker:'Ryze / DJI',name:'Tello',type:'quad',mass:0.080,dim:0.10,
+  cells:1,vc:3.8,Wh:4.18,battMass:0.026,chemName:'LiPo 1S 1100 mAh',cr:10,
+  prop:'3x3',twr:1.9,tilt:35,tiltV:30,vmax:8,vUp:2.5,vDn:2,yaw:100,wind:4,ceiling:30,tHover:13,
+  motorMass:0.006,builtin:['camhd'],esc:6,eu:'C0 · subcategoría A1',avW:1.0,
+  ap:{fenceOn:true,fenceAltMax:30,fenceRadius:100,fenceAct:'rth'},
+  pub:[['Masa','80 g (87 g con protectores)'],['Dimensiones','98 × 92,5 × 41 mm'],['Autonomía máx.','13 min'],['Velocidad máx.','28,8 km/h (8 m/s)'],['Alcance máx.','100 m'],['Altura máx.','30 m'],['Batería','LiPo 3,8 V · 1100 mAh · 4,18 Wh'],['Hélices','2 palas, Ø 76 mm (DJI 3044P)'],['Cámara','5 MP · vídeo 720p']],
+  est:['Hélice y motor equivalentes','Velocidad ascenso/descenso','Velocidad de guiñada','Viento máximo (no publicado)'],
+  src:[{t:'Ficha del fabricante recogida en Wikipedia: Ryze Tello',u:'https://en.wikipedia.org/wiki/Ryze_Tello'}],
+  note:'Geovalla de fábrica de 30 m de altura y 100 m de distancia (límites publicados), que aquí provoca un regreso a casa.'});
+
+make({id:'dji-mini4pro',maker:'DJI',name:'Mini 4 Pro',type:'quad',mass:0.249,dim:0.30,
+  cells:2,vc:3.66,Wh:18.96,battMass:0.0779,chemName:'Li-ion 2S 2590 mAh',cr:12,
+  prop:'5x3',twr:2.2,tilt:35,tiltV:35,vmax:16,vUp:5,vDn:5,yaw:120,wind:10.7,ceiling:4000,tHover:30,
+  motorMass:0.012,builtin:['camhd','obs'],esc:20,eu:'C0 · subcategoría A1',avW:2.0,
+  pub:[['Masa al despegue','< 249 g'],['Dimensiones plegado','148 × 94 × 64 mm'],['Dimensiones desplegado','298 × 373 × 101 mm'],['Velocidad ascenso / descenso máx.','5 m/s (modo S y N) · 3 m/s (modo C)'],['Velocidad horizontal máx.','16 m/s (S) · 12 m/s (N y C)'],['Resistencia al viento','10,7 m/s'],['Autonomía máx. / en estacionario','34 min / 30 min'],['Altitud máx. de despegue','4000 m'],['Ángulo de cabeceo máx.','35°'],['Batería','Li-ion · 2590 mAh · 7,32 V · 18,96 Wh · 77,9 g'],['Alcance de vídeo (CE)','10 km (sin obstáculos ni interferencias)'],['Clase UE','C0'],['Cámara','CMOS 1/1,3″ · 48 MP'],['Temperatura de uso','−10 a 40 °C']],
+  est:['Hélice y motor equivalentes','Velocidad de guiñada'],
+  src:[{t:'DJI · Mini 4 Pro · Especificaciones',u:'https://www.dji.com/mini-4-pro/specs'}]});
+
+make({id:'dji-mini5pro',maker:'DJI',name:'Mini 5 Pro',type:'quad',mass:0.2499,dim:0.31,
+  cells:2,vc:3.5,Wh:19.52,battMass:0.0712,chemName:'Li-ion 2S 2788 mAh',cr:12,
+  prop:'5x3',twr:2.3,tilt:38,tiltV:38,vmax:18,vUp:10,vDn:6,yaw:120,wind:12,ceiling:6000,tHover:31.8,
+  motorMass:0.012,builtin:['camhd','obs'],esc:20,eu:'C0 · subcategoría A1',avW:2.0,
+  pub:[['Masa al despegue','249,9 g (± 4 g)'],['Dimensiones plegado','157 × 95 × 68 mm'],['Dimensiones desplegado','304 × 380 × 91 mm'],['Velocidad ascenso máx.','10 m/s (S) · 6 m/s (N) · 3 m/s (C)'],['Velocidad descenso máx.','6 m/s (S y N) · 3 m/s (C)'],['Velocidad horizontal máx.','18 m/s (modo S)'],['Resistencia al viento','12 m/s'],['Autonomía máx. / típica','36 min / 21 min'],['Altitud máx. de despegue','6000 m'],['Ángulo de cabeceo máx.','38°'],['Batería','Li-ion · 2788 mAh · 7 V · 19,52 Wh · 71,2 g'],['Alcance de vídeo (CE)','10 km'],['Clase UE','C0'],['Cámara','CMOS 1″ · 50 MP · 24 mm · f/1,8'],['Sensores','Visión binocular omnidireccional + LiDAR frontal']],
+  est:['Hélice y motor equivalentes','Velocidad de guiñada','Autonomía en estacionario (no publicada: se estima en el 88 % de la autonomía máx., como en el Mini 4 Pro)'],
+  src:[{t:'DJI · Mini 5 Pro · Especificaciones (región Grecia)',u:'https://www.dji.com/gr/mini-5-pro/specs'}]});
+
+make({id:'dji-air3s',maker:'DJI',name:'Air 3S',type:'quad',mass:0.724,dim:0.40,
+  cells:4,vc:3.65,Wh:62.5,battMass:0.247,chemName:'Li-ion 4S 4276 mAh',cr:8,
+  prop:'7x4',twr:2.0,tilt:36,tiltV:36,vmax:19,vUp:10,vDn:10,yaw:100,wind:12,ceiling:6000,tHover:41,
+  motorMass:0.03,builtin:['camhd','obs','rid'],esc:30,eu:'C1 · subcategoría A1',avW:3.0,
+  pub:[['Masa al despegue','724 g'],['Dimensiones plegado','214,19 × 100,63 × 89,17 mm'],['Dimensiones desplegado','266,11 × 325,47 × 106 mm'],['Velocidad ascenso / descenso máx.','10 m/s'],['Velocidad horizontal máx.','21 m/s (19 m/s en la UE)'],['Resistencia al viento','12 m/s'],['Autonomía máx. / en estacionario','45 min / 41 min'],['Altitud máx. de despegue','6000 m'],['Ángulo de cabeceo máx.','36°'],['Batería','Li-ion 4S · 4276 mAh · 14,6 V · 62,5 Wh · 247 g'],['Alcance de vídeo (CE)','10 km'],['Clase UE','C1'],['Cámaras','CMOS 1″ 50 MP (24 mm) + CMOS 1/1,3″ 48 MP (70 mm)'],['Sensores','Visión omnidireccional + LiDAR frontal + infrarrojo inferior']],
+  est:['Hélice y motor equivalentes','Velocidad de guiñada','Límite de 19 m/s (región UE) en lugar de 21 m/s'],
+  src:[{t:'DJI · Air 3S · Especificaciones',u:'https://www.dji.com/air-3s/specs'}]});
+
+make({id:'dji-mavic4pro',maker:'DJI',name:'Mavic 4 Pro',type:'quad',mass:1.063,dim:0.42,
+  cells:4,vc:3.58,Wh:95.3,battMass:0.332,chemName:'Li-ion 4S 6654 mAh',cr:8,
+  prop:'9x4',twr:2.0,tilt:35,tiltV:35,vmax:25,vUp:10,vDn:10,yaw:100,wind:12,ceiling:6000,tHover:45,
+  motorMass:0.045,builtin:['camhd','obs','rid'],esc:30,eu:'C2 · subcategoría A2',avW:3.5,
+  pub:[['Masa al despegue','≈ 1063 g'],['Dimensiones plegado','257,6 × 124,8 × 106,6 mm'],['Dimensiones desplegado','328,7 × 390,5 × 135,2 mm'],['Velocidad ascenso / descenso máx.','10 m/s (modo S) · 6 m/s (N y C)'],['Velocidad horizontal máx.','25 m/s (modo S, sin viento)'],['Resistencia al viento','12 m/s'],['Autonomía máx. / en estacionario','51 min / 45 min'],['Altitud máx. de despegue','6000 m'],['Ángulo de cabeceo máx.','35°'],['Batería','Li-ion 4S · 6654 mAh · 14,32 V · 95,3 Wh · 332 g'],['Alcance de vídeo (CE)','15 km'],['Clase UE','C2'],['Cámaras','4/3″ 100 MP (Hasselblad) + 1/1,3″ 48 MP + 1/1,5″ 50 MP'],['Sensores','Visión omnidireccional + LiDAR frontal + infrarrojo inferior']],
+  est:['Hélice y motor equivalentes','Velocidad de guiñada'],
+  src:[{t:'DJI Mavic 4 Pro · especificaciones (copia de la ficha de DJI en PDF de un distribuidor)',u:'https://www.cliftoncameras.co.uk/uploads/specifications/DJI%20Mavic%204%20Pro%20Specification.pdf'}]});
+
+make({id:'dji-avata2',maker:'DJI',name:'Avata 2 (FPV)',type:'quad',mass:0.377,dim:0.21,
+  cells:4,vc:3.69,Wh:31.7,battMass:0.145,chemName:'Li-ion 4S 2150 mAh',cr:15,
+  prop:'3.5x3',twr:3.3,tilt:60,tiltV:42,vmax:19,vUp:9,vDn:9,yaw:300,wind:10.7,ceiling:5000,tHover:21,
+  motorMass:0.02,builtin:['camfpv','rid'],esc:30,eu:'C1 · subcategoría A1',avW:2.5,
+  pub:[['Masa al despegue','≈ 377 g'],['Dimensiones','185 × 212 × 64 mm'],['Velocidad ascenso / descenso máx.','6 m/s (Normal) · 9 m/s (Sport)'],['Velocidad horizontal máx.','8 m/s (Normal) · 16 m/s (Sport) · 27 m/s (Manual; 19 m/s en la UE)'],['Resistencia al viento','10,7 m/s (nivel 5)'],['Autonomía máx. / en estacionario','≈ 23 min / ≈ 21 min'],['Altitud máx. de despegue','5000 m'],['Batería','Li-ion · 2150 mAh · 14,76 V · 31,7 Wh · 145 g'],['Alcance de vídeo (CE)','10 km'],['Clase UE','C1'],['Cámara','CMOS 1/1,3″ · 12 MP'],['Temperatura de uso','−10 a 40 °C']],
+  est:['Hélice y motor equivalentes','Ángulo de inclinación en modo Manual (no publicado)','Velocidad de guiñada','Velocidad máxima: 19 m/s del modo Manual UE'],
+  src:[{t:'DJI · Avata 2 · Especificaciones',u:'https://www.dji.com/avata-2/specs'}],
+  note:'Se vuela con el modo «ATTI» (Q) para el comportamiento manual de los FPV.'});
+
+make({id:'dji-m350',maker:'DJI Enterprise',name:'Matrice 350 RTK',type:'quad',mass:6.47,dim:0.90,
+  cells:12,vc:3.73,Wh:526.4,battMass:2.70,chemName:'Li-ion 2 × TB65 (12S) 2 × 5880 mAh',cr:6,
+  prop:'21x10',twr:2.3,tilt:30,tiltV:30,vmax:23,vUp:6,vDn:5,yaw:100,wind:12,ceiling:5000,tHover:55,
+  motorMass:0.19,builtin:['rtk','obs','rid'],allowAcc:true,allowPay:true,maxPay:2.7,esc:80,eu:'Sin marcado de clase · categoría específica',avW:12,
+  pub:[['Masa sin baterías (con gimbal)','≈ 3,77 kg'],['Masa con 2 baterías TB65','≈ 6,47 kg'],['Masa máx. al despegue','9,2 kg'],['Dimensiones desplegado (sin hélices)','810 × 670 × 430 mm'],['Distancia diagonal','895 mm'],['Carga útil máx. (1 gimbal)','960 g'],['Velocidad ascenso máx.','6 m/s'],['Velocidad descenso máx.','5 m/s'],['Velocidad horizontal máx.','23 m/s'],['Resistencia al viento','12 m/s'],['Autonomía máx. (sin carga, ≈ 8 m/s)','55 min'],['Altitud máx.','5000 m (hélices 2110s) · 7000 m (2112)'],['Ángulo de cabeceo máx.','30° (25° en modo N con visión frontal)'],['Velocidad angular máx.','cabeceo 300°/s · guiñada 100°/s'],['Baterías','2 × TB65 · 5880 mAh · 44,76 V · 263,2 Wh · 1,35 kg c/u'],['Protección','IP55'],['Alcance de vídeo (CE)','8 km'],['Temperatura de uso','−20 a 50 °C']],
+  est:['Hélice y motor equivalentes','Autonomía en estacionario igualada a la autonomía máx. publicada'],
+  src:[{t:'DJI Enterprise · Matrice 350 RTK · Especificaciones',u:'https://enterprise.dji.com/matrice-350-rtk/specs'}],
+  note:'Admite cambiar la carga útil: elige cámaras, LiDAR o lastre. La autonomía baja al subir la masa.'});
+
+make({id:'ebee-x',maker:'AgEagle (senseFly)',name:'eBee X',type:'fw-long',mass:1.6,dim:1.16,
+  cells:4,vc:3.65,Wh:80,battMass:0.45,chemName:'Li-ion 4S (batería de autonomía, estimada)',cr:5,
+  prop:'9x8',vpTarget:40,vmax:30,wind:12.8,ceiling:4500,tHover:90,
+  motorMass:0.07,builtin:['camhd','rid'],esc:40,eu:'Categoría específica',avW:4,
+  fw:{b:1.16,S:0.20,CL0:0.40,CLa:5.0,CD0:0.024,e:0.88,aMax:13,vne:35},pK:0.77,
+  pub:[['Masa máx. al despegue','1,6 kg'],['Envergadura','116 cm'],['Autonomía máx.','90 min (batería de autonomía + cámara S.O.D.A.)'],['Velocidad de crucero','11–30 m/s (40–110 km/h)'],['Resistencia al viento','hasta 12,8 m/s (46 km/h)'],['Alcance del radioenlace','3 km nominal (hasta 8 km)'],['Aterrizaje','automático lineal, precisión 5 m en cono de 35°'],['Temperatura de uso','−15 a 40 °C']],
+  est:['Superficie alar y polar aerodinámica (no publicadas)','Capacidad de la batería (no publicada: ≈ 80 Wh)','Hélice y motor equivalentes','Potencia calibrada para ≈ 90 min en crucero'],
+  src:[{t:'AgEagle · eBee X · folleto 2026',u:'https://www.thefuture3d.com/spec-sheets/ageagle/AgEagle_eBee_X__Brochure_2026_EN.pdf'}],
+  note:'Ala fija: se despega lanzándolo con gas a fondo y se aterriza con B (toma asistida).'});
+
+SD.COMM_LIST=SD.COMM;
+})();
+if(typeof module!=='undefined') module.exports=SD;
 
 /* ===== MODELO: atmósfera, viento, batería, radioenlace, GNSS ===== */
 (function(){
@@ -993,7 +1128,9 @@ F.stepRotor = function(dt,c,rho){
   var vmaxH = Math.min(ac.kind==='heli'?14:16, 4+10*Math.sqrt(Math.max(0,Math.tan(tiltLim))));
   if(ap.loitSpeed) vmaxH=Math.min(vmaxH,ap.loitSpeed);
   var vUp=Math.min(5,2+0.5*Tmax/W); if(ap.climbUp) vUp=Math.min(vUp,ap.climbUp);
-  var cf=c.pitch*vmaxH, cr=c.roll*vmaxH, cz=c.thr>0?c.thr*vUp:c.thr*(ap.climbDn||3.0), cyaw=c.yaw*(ap.yawRate||fr.yawRate)*deg;
+  var vDnLim=3.0;
+  if(ac.spec){ vmaxH=ac.spec.vmax; vUp=ac.spec.vUp; vDnLim=ac.spec.vDn; if(ap.loitSpeed) vmaxH=Math.min(vmaxH,ap.loitSpeed); if(ap.climbUp) vUp=Math.min(vUp,ap.climbUp); }
+  var cf=c.pitch*vmaxH, cr=c.roll*vmaxH, cz=c.thr>0?c.thr*vUp:c.thr*(ap.climbDn||vDnLim), cyaw=c.yaw*(ap.yawRate||fr.yawRate)*deg;
   var tf=null,tr=null;
   if(this.rth && this.status!=='ground'){
     if(!gpsOk){ this.cancelRTH(); }
@@ -1179,7 +1316,7 @@ F.stepFixed = function(dt,c,rho){
   p.x+=v.x*dt; p.y+=v.y*dt; p.z+=v.z*dt;
   this.accel={x:0,y:0,z:0}; this.gload=(L/(m*G))||1;
   /* potencia */
-  var Pm=ac.cp*rho*n*n*n*Math.pow(ac.D,5)*(1-0.3*Math.min(1,Va/Math.max(Vp,1)));
+  var Pm=ac.cp*rho*n*n*n*Math.pow(ac.D,5)*(1-0.3*Math.min(1,Va/Math.max(Vp,1)))*(ac.pK||1);
   if(cutM) Pm=0;
   this.P=Pm/(ac.effM*ac.effE)+ac.accW+ac.avW; this.rpm=n*60; this.nmax=nmax;
   this.Tcur=Tthr; this.thrPct=u*100; this.Tmax=T0; this.TWR=Tm1/W;
@@ -2161,6 +2298,26 @@ function fillProps(){
   if(list.indexOf(ST.cfg.prop)<0 && kind!=='heli') ST.cfg.prop=list[0];
 }
 function D(id){return SD.byId(SD.TYPES,id);}
+function commList(){ return SD.COMM||[]; }
+function buildComm(){
+  var s=$('cComm'); if(!s) return; s.innerHTML='<option value="">Configuración libre (eliges los componentes)</option>';
+  var mk=''; var g=null;
+  commList().forEach(function(c){ if(c.maker!==mk){ g=document.createElement('optgroup'); g.label=c.maker; s.appendChild(g); mk=c.maker; } var o=document.createElement('option'); o.value=c.id; o.textContent=c.name+' · '+Math.round(c.mass*1000)+' g'; g.appendChild(o); });
+}
+function syncComm(){
+  var c=ST.cfg, cm=c.comm?SD.byId(SD.COMM,c.comm):null; if(c.comm&&!cm){ delete c.comm; }
+  $('cComm').value=cm?cm.id:'';
+  ['cType','cFrame','cMotor','cProp','cEsc','cChem','cCells','cCap'].forEach(function(id){ $(id).disabled=!!cm; });
+  document.querySelectorAll('#accList input').forEach(function(i){ var b=cm&&(cm.builtin.indexOf(i.dataset.a)>=0||!cm.allowAcc); i.disabled=!!b; i.parentNode.style.opacity=b?0.55:1; });
+  $('cPay').disabled=!!cm&&!cm.allowPay;
+  $('commHint').innerHTML=cm?'<b>Ficha fija del fabricante.</b> '+(cm.allowAcc?'Este modelo admite cambiar la carga útil (cámaras, sensores, lastre).':'Los componentes no son modificables.')+(cm.note?'<br>'+cm.note:''):'Elige un modelo comercial para cargar sus características publicadas, o deja la configuración libre para diseñar tu propia aeronave.';
+  var card=$('commCard'); if(!cm){ card.style.display='none'; return; } card.style.display='';
+  var h='<table class="tbl" style="width:100%;font-size:12px">'+cm.pub.map(function(r){ return '<tr><td style="color:var(--ink2);width:42%">'+r[0]+'</td><td>'+r[1]+'</td></tr>'; }).join('')+'</table>';
+  h+='<div class="note"><b>Equivalente del simulador</b> (no son datos del fabricante): '+cm.est.join(' · ')+'. La masa, la batería, la autonomía y las velocidades máximas se han ajustado a la ficha.</div>';
+  h+='<div class="note">Fuentes: '+cm.src.map(function(s){ return '<a href="'+s.u+'" target="_blank" rel="noopener">'+s.t+'</a>'; }).join(' · ')+'</div>';
+  $('commBody').innerHTML=h;
+}
+SIM.syncComm=syncComm;
 function buildStatic(){
   fill($('cType'),SD.TYPES.map(function(t){return [t.id,t.name];}),ST.cfg.type);
   fill($('cMotor'),SD.MOTORS.map(function(m){return [m.id,m.name+' · '+Math.round(m.m*1000)+' g · '+m.imax+' A'];}),ST.cfg.motor);
@@ -2175,7 +2332,7 @@ function buildStatic(){
     al.appendChild(l);
   });
   $('cPay').value=ST.cfg.pay;
-  fillFrames(); fillProps();
+  fillFrames(); fillProps(); buildComm();
   /* meteo */
   var wp=$('wxPre'); wp.innerHTML='';
   Object.keys(SD.WX).forEach(function(k){ var b=document.createElement('button'); b.className='btn'; b.dataset.k=k; b.textContent=SD.WX[k].name; wp.appendChild(b); });
@@ -2212,10 +2369,12 @@ function syncTime(){
 SIM.syncTime=syncTime;
 function syncCtrls(){
   var c=ST.cfg;
+  if(c.comm&&!SD.byId(SD.COMM,c.comm)) delete c.comm;
   $('cType').value=c.type; fillFrames(); $('cFrame').value=c.frame; fillProps(); if(c.prop) $('cProp').value=c.prop;
   $('cMotor').value=c.motor; $('cEsc').value=c.esc; $('cChem').value=c.chem; $('cCells').value=c.cells; $('cCap').value=c.cap; $('cPay').value=c.pay;
   document.querySelectorAll('#accList input').forEach(function(i){ i.checked=c.acc.indexOf(i.dataset.a)>=0; });
   $('cPayV').textContent=c.pay+' g';
+  syncComm();
   /* meteo */
   document.querySelectorAll('#wxPre .btn').forEach(function(b){ b.classList.toggle('on',b.dataset.k===ST.wxId); });
   syncTime();
@@ -2278,7 +2437,7 @@ SIM.validate=function(){
   else if(!V.errors.length){ var li2=document.createElement('li'); li2.className='o'; li2.innerHTML='✔ Puede volar (revisa los avisos).'; vl.appendChild(li2); }
   var fs=$('flySt');
   if(V.errors.length){ fs.className='st bad'; fs.textContent='✘ Esta configuración no tiene sentido físico: corrígela para poder volar ('+V.errors.length+' error'+(V.errors.length>1?'es':'')+').'; $('bFly').disabled=true; }
-  else { fs.className='st ok'; fs.textContent='✔ Lista para volar · '+ac.type.name+' · '+(I.mass*1000).toFixed(0)+' g · '+I.cat; $('bFly').disabled=false; }
+  else { fs.className='st ok'; fs.textContent='✔ Lista para volar · '+(ac.cm?ac.cm.maker+' '+ac.cm.name:ac.type.name)+' · '+(I.mass*1000).toFixed(0)+' g · '+I.cat; $('bFly').disabled=false; }
   /* legalidad radio */
   var cl=SD.byId(SD.CTRL_LINKS,ST.rf.cl), vl2=SD.byId(SD.VID_LINKS,ST.rf.vl);
   legalNote(cl,ST.rf.cp,$('legC')); legalNote(vl2,ST.rf.vp,$('legV'));
@@ -2292,7 +2451,11 @@ SIM.validate=function(){
 function wire(){
   function chg(fn){ return function(e){ fn(e); syncAfter(); }; }
   function syncAfter(){ SIM.validate(); SIM.save(); }
-  $('cType').onchange=function(){ ST.cfg.type=this.value; var s=SD.STD[ST.cfg.type]; Object.assign(ST.cfg,JSON.parse(JSON.stringify(s))); syncCtrls(); syncAfter(); };
+  $('cComm').onchange=function(){ var id=this.value;
+    if(id){ var cm=SD.byId(SD.COMM,id); ST.cfg=Object.assign({},SD.commCfg(cm)); }
+    else { var t=ST.cfg.type; ST.cfg={type:t}; Object.assign(ST.cfg,JSON.parse(JSON.stringify(SD.STD[t]))); }
+    syncCtrls(); syncAfter(); };
+  $('cType').onchange=function(){ delete ST.cfg.comm; ST.cfg.type=this.value; var s=SD.STD[ST.cfg.type]; Object.assign(ST.cfg,JSON.parse(JSON.stringify(s))); syncCtrls(); syncAfter(); };
   $('cFrame').onchange=chg(function(){ ST.cfg.frame=$('cFrame').value; });
   $('cMotor').onchange=chg(function(){ ST.cfg.motor=$('cMotor').value; });
   $('cProp').onchange=chg(function(){ ST.cfg.prop=$('cProp').value; });
@@ -2301,7 +2464,7 @@ function wire(){
   $('cCells').onchange=chg(function(){ ST.cfg.cells=+$('cCells').value; });
   $('cCap').onchange=chg(function(){ ST.cfg.cap=+$('cCap').value; });
   $('cPay').oninput=chg(function(){ ST.cfg.pay=+$('cPay').value; $('cPayV').textContent=ST.cfg.pay+' g'; });
-  $('bStd').onclick=function(){ var f=ST.cfg.frame; Object.assign(ST.cfg,JSON.parse(JSON.stringify(SD.STD[ST.cfg.type]))); syncCtrls(); syncAfter(); };
+  $('bStd').onclick=function(){ if(ST.cfg.comm) return; var f=ST.cfg.frame; Object.assign(ST.cfg,JSON.parse(JSON.stringify(SD.STD[ST.cfg.type]))); syncCtrls(); syncAfter(); };
   function interior(acc){ ST.cfg=Object.assign({type:'quad'},JSON.parse(JSON.stringify(SD.STD.quad))); ST.cfg.acc=acc; ST.scn='nave'; ST.elevOv=null; ST.wxId='calma'; ST.wx=Object.assign({},SD.WX.calma); syncCtrls(); syncAfter(); }
   $('bInt1').onclick=function(){ interior(['camfpv','lr-f','lr-b','lr-l','lr-r','lr-u','lr-d','flow','rid']); };
   $('bInt2').onclick=function(){ interior(['camfpv','lidar','lr-u','lr-d','flow','rid']); };
@@ -2507,7 +2670,7 @@ var PRE={
   taer:{name:'TAER · FrSky, Spektrum, FlySky',thr:ax(0),yaw:ax(3),pitch:ax(2),roll:ax(1)},
   xbox:{name:'Mando de consola (modo 2)',thr:ax(1,1),yaw:ax(0),pitch:ax(3,1),roll:ax(2)}
 };
-var cfg={on:true,dz:0.04,expo:0,padId:'',map:JSON.parse(JSON.stringify({thr:PRE.aetr.thr,yaw:PRE.aetr.yaw,pitch:PRE.aetr.pitch,roll:PRE.aetr.roll})),aux:{}};
+var cfg={on:true,dz:0.04,expo:0,hold:0.5,padId:'',map:JSON.parse(JSON.stringify({thr:PRE.aetr.thr,yaw:PRE.aetr.yaw,pitch:PRE.aetr.pitch,roll:PRE.aetr.roll})),aux:{}};
 try{ var sv=JSON.parse(localStorage.getItem('santsim_pad')||'null'); if(sv&&sv.map) cfg=Object.assign(cfg,sv); }catch(e){}
 function save(){ try{ localStorage.setItem('santsim_pad',JSON.stringify(cfg)); }catch(e){} }
 cfg.seen=cfg.seen||{};
@@ -2522,10 +2685,12 @@ function norm(m,raw,isThr){
   if(isThr){ n=(hi-lo)>0.05?(raw-lo)/(hi-lo)*2-1:raw; }
   else { var c=m.c; n=raw>=c?(hi-c>0.05?(raw-c)/(hi-c):raw-c):(c-lo>0.05?(raw-c)/(c-lo):raw-c); }
   n=Math.max(-1,Math.min(1,n)); if(m.inv) n=-n;
-  var dz=cfg.dz*(isThr?1.5:1), a=Math.abs(n);
-  if(a<dz) return 0; a=(a-dz)/(1-dz);
-  var e=cfg.expo; a=(1-e)*a+e*a*a*a; return n<0?-a:a;
+  if(isThr) return n;
+  return shape(n,cfg.dz);
 }
+function shape(n,dz){ var a=Math.abs(n); if(a<dz) return 0; a=(a-dz)/(1-dz); var e=cfg.expo; a=(1-e)*a+e*a*a*a; return n<0?-a:a; }
+/* gas: el stick (0..1) pasa a orden de ascenso/descenso (−1..1) con el punto de mantener altura en «hold» */
+function thrCmd(s){ var h=cfg.hold, a=s<h?-(h-s)/h:(s-h)/(1-h); return shape(a,cfg.dz*1.5); }
 function auxState(d,g){ if(!d) return false; if(d.t==='b') return !!(g.buttons[d.i]&&g.buttons[d.i].pressed); var v=g.axes[d.i]; return v!==undefined&&v*d.d>0.5; }
 
 function poll(){
@@ -2537,6 +2702,7 @@ function poll(){
       for(var kk in FN) cfg.map[kk]=JSON.parse(JSON.stringify(PRE[pre][kk])); cfg.seen[g.id]=pre; PAD.autoPre=pre; save(); }
     render(); }
   rawAx=g.axes; rawBt=g.buttons;
+  if(g.timestamp!==PAD._ts){ PAD._ts=g.timestamp; var nw=performance.now(); if(PAD._tn){ var dt=nw-PAD._tn; PAD.hz=PAD.hz?PAD.hz*0.9+0.1*(1000/Math.max(dt,1)):1000/Math.max(dt,1); } PAD._tn=nw; }
   var i; if(!touched){ for(i=0;i<g.axes.length;i++) if(Math.abs(g.axes[i]-snap.ax[i])>0.12){ touched=true; break; } if(!touched) for(i=0;i<g.buttons.length;i++) if(g.buttons[i].pressed){ touched=true; break; } }
   /* aprendizaje de ejes / interruptores */
   if(learn){
@@ -2551,7 +2717,7 @@ function poll(){
   o.on=!!(cfg.on&&touched&&!learn&&!cal);
   if(o.on){
     ['yaw','pitch','roll'].forEach(function(k){ o[k]=norm(m[k],g.axes[m[k].a],false); });
-    var tn=norm(m.thr,g.axes[m.thr.a],true); o.thr=tn; o.thrAbs=(tn+1)/2;
+    var tn=norm(m.thr,g.axes[m.thr.a],true), ts=(tn+1)/2; o.thr=thrCmd(ts); o.thrAbs=ts;
     for(key in AUXN){ var st=auxState(cfg.aux[key],g), pv=prevAux[key]; if(pv===undefined){ prevAux[key]=st; continue; }
       if(st!==pv){ prevAux[key]=st; var h=PAD.hooks[key]; if(h&&!SIM.hangarOpen()){ if(AUXLVL[key]) h(st); else if(st) h(); } } }
   } else { o.yaw=o.pitch=o.roll=o.thr=0; o.thrAbs=undefined; for(key in AUXN) prevAux[key]=auxState(cfg.aux[key],g); }
@@ -2584,6 +2750,7 @@ function render(){
   }
   h+='<div class="pre" style="margin-top:10px;flex-wrap:wrap">'+Object.keys(PRE).map(function(k){ return '<button class="btn" data-pre="'+k+'">'+PRE[k].name+'</button>'; }).join('')+'</div>';
   h+='<div class="row" style="margin-top:8px"><label>Zona muerta</label><div class="val"><input type="range" id="padDz" min="0" max="0.15" step="0.01" value="'+cfg.dz+'"><span id="padDzV">'+Math.round(cfg.dz*100)+' %</span></div></div>';
+  h+='<div class="row"><label>Gas: punto de mantener altura</label><div class="val"><input type="range" id="padHold" min="0.15" max="0.5" step="0.05" value="'+cfg.hold+'"><span id="padHoldV">'+Math.round(cfg.hold*100)+' % del recorrido</span></div></div><div class="note" style="margin-top:0">En multirrotor el dron sólo sube cuando el stick de gas pasa de este punto (como el modo AltHold/Loiter de ArduPilot). Con 50 % hay que subir medio recorrido antes de que reaccione; bájalo (p. ej. 25 %) para despegar antes.</div>';
   h+='<div class="row"><label>Expo (suavizar el centro)</label><div class="val"><input type="range" id="padEx" min="0" max="0.7" step="0.05" value="'+cfg.expo+'"><span id="padExV">'+Math.round(cfg.expo*100)+' %</span></div></div>';
   h+='<div class="pre" style="margin-top:8px"><button class="btn'+(cal?' warn':'')+'" id="padCal">'+(cal?'Terminar calibración':'Calibrar recorrido')+'</button></div>';
   h+='<div class="note">'+(cal?'<b>Calibrando:</b> deja los sticks en el centro un instante, luego mueve todos los mandos a todos sus extremos varias veces y pulsa «Terminar».':'Calibra si los sticks no llegan a ±100 % o no centran en 0. Suelta primero los sticks (el gas puede quedar abajo).')+'</div>';
@@ -2600,7 +2767,7 @@ function render(){
 }
 function draw(){
   var st=$('padState'); if(!el||!st) return; var g=cur;
-  var txt=!g?'Sin emisora.':(cfg.on?(PAD.out.on?'<b style="color:var(--green,#1b7a3a)">● Emisora activa</b> — controlas el dron con ella.':(cal?'Calibrando…':(learn?'Esperando mando…':'Emisora detectada. Mueve un stick para activarla.'))):'Emisora desactivada.');
+  var txt=!g?'Sin emisora.':(cfg.on?(PAD.out.on?'<b style="color:var(--green,#1b7a3a)">● Emisora activa</b> — controlas el dron con ella.'+(PAD.hz?' <span style="color:var(--ink2)">('+Math.round(PAD.hz)+' informes/s)</span>':''):(cal?'Calibrando…':(learn?'Esperando mando…':'Emisora detectada. Mueve un stick para activarla.'))):'Emisora desactivada.');
   if(st._t!==txt){ st.innerHTML=txt; st._t=txt; }
   if(!g) return;
   for(var i=0;i<Math.min(g.axes.length,10);i++){ var a=$('padA'+i), v=$('padV'+i); if(!a) break; var x=(g.axes[i]+1)/2*100; a.style.left='calc('+Math.max(0,Math.min(100,x))+'% - 1px)'; v.textContent=Math.round(g.axes[i]*100)+'%'; }
@@ -2613,7 +2780,7 @@ PAD.init=function(){
     else if(t.id==='padSel'){ var g=(navigator.getGamepads()||[])[+t.value]; if(g){ cfg.padId=g.id; snap=null; save(); render(); } }
     else if(t.dataset.ax){ var m=cfg.map[t.dataset.ax]; m.a=+t.value; m.lo=-1; m.hi=1; m.c=0; save(); lastKey=''; render(); }
     else if(t.dataset.inv){ cfg.map[t.dataset.inv].inv=t.checked?1:0; save(); } });
-  el.addEventListener('input',function(e){ var t=e.target; if(t.id==='padDz'){ cfg.dz=+t.value; $('padDzV').textContent=Math.round(cfg.dz*100)+' %'; save(); } if(t.id==='padEx'){ cfg.expo=+t.value; $('padExV').textContent=Math.round(cfg.expo*100)+' %'; save(); } });
+  el.addEventListener('input',function(e){ var t=e.target; if(t.id==='padDz'){ cfg.dz=+t.value; $('padDzV').textContent=Math.round(cfg.dz*100)+' %'; save(); } if(t.id==='padHold'){ cfg.hold=+t.value; $('padHoldV').textContent=Math.round(cfg.hold*100)+' % del recorrido'; save(); } if(t.id==='padEx'){ cfg.expo=+t.value; $('padExV').textContent=Math.round(cfg.expo*100)+' %'; save(); } });
   el.addEventListener('click',function(e){ var t=e.target.closest('button'); if(!t) return;
     if(t.dataset.pre){ var p=PRE[t.dataset.pre]; for(var k in FN) cfg.map[k]=JSON.parse(JSON.stringify(p[k])); save(); lastKey=''; render(); }
     else if(t.dataset.learn){ var q=t.dataset.learn.split(':'); if(!cur) return; snap={id:cur.id,ax:cur.axes.slice()}; learn=(learn&&learn.key===q[1])?null:{kind:q[0],key:q[1]}; lastKey=''; render(); }
@@ -2980,8 +3147,9 @@ var lastHud=0, lastNoise=0;
 function stFromUI(){
   var r=ST.rf;
   return {seed:(Math.random()*1e6)|0, ctrlLink:SD.byId(SD.CTRL_LINKS,r.cl), ctrlPw:r.cp, ctrlAnt:SD.byId(SD.GANT,r.ca), vidLink:SD.byId(SD.VID_LINKS,r.vl), vidPw:r.vp, vidAnt:SD.byId(SD.GANT,r.va),
-          tod:ST.tod, fsLink:r.fl, fsBatt:r.fb, rthAlt:r.alt, jam:ST.jam, rfNoise:ST.rfNoise, ap:SIM.apEff()};
+          tod:ST.tod, fsLink:r.fl, fsBatt:r.fb, rthAlt:r.alt, jam:ST.jam, rfNoise:ST.rfNoise, ap:commAp()};
 }
+function commAp(){ var cm=ST.cfg.comm?SD.byId(SD.COMM,ST.cfg.comm):null, e=SIM.apEff(); if(!cm||!cm.ap) return e; return Object.assign({},cm.ap,e||{}); }
 function applyLive(){
   if(!F) return;
   var s=stFromUI(); s.seed=F.st.seed; F.st=s;
@@ -3202,7 +3370,7 @@ function keysPanel(){ var _t=$('tbChute'); if(_t) _t.style.display=(F&&F.ac.has(
 $('chips').addEventListener('click',function(e){ var b=e.target.closest&&e.target.closest('button[data-cam]'); if(b&&!b.disabled&&F&&!hangarOpen) setCam(b.dataset.cam); });
 function chips(d){
   var s=[]; var st={ground:'En tierra',landed:'En tierra',flying:'En vuelo',rolling:'Rodando',crashed:'Siniestrado'}[F.status];
-  s.push('<span class="chip">'+F.ac.type.name.split(' (')[0]+'</span>');
+  s.push('<span class="chip">'+(F.ac.cm?F.ac.cm.name:F.ac.type.name.split(' (')[0])+'</span>');
   s.push('<span class="chip cams">Cám: '+cams.map(function(m,i){ var off=(m==='fpv'&&!hasCam()); return '<button type="button" data-cam="'+m+'"'+(m===SIM.camMode?' class="on"':'')+(off?' disabled title="Este dron no lleva cámara (añádela en el hangar)"':' title="Tecla '+(i+1)+'"')+'>'+({vlos:'Vista',fpv:'FPV',chase:'Seguim.',top:'Cenital'})[m]+'</button>'; }).join('')+'</span>');
   if(F.ac.kind!=='fixed') s.push('<span class="chip">Modo: <b>'+(F.rth?'RTH':(F.gpsActive?(F.holdSrc==='FLUJO'?'FLUJO ÓPTICO':'GPS'):'ATTI'))+'</b></span>');
   s.push('<span class="chip"><b>'+st+'</b></span>');
