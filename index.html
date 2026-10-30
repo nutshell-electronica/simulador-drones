@@ -58,6 +58,16 @@ kbd{font-family:var(--mono);font-size:10.5px;border:1px solid var(--line2);borde
 .chip{background:rgba(251,252,253,.92);border:1px solid var(--ink);padding:2px 9px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;border-radius:2px;white-space:nowrap}
 .chip.cams{padding:1px 4px 1px 9px}.chip.cams button{font:inherit;letter-spacing:inherit;text-transform:inherit;margin-left:3px;padding:1px 6px;border:1px solid var(--ink);background:#fff;color:var(--ink);border-radius:2px;cursor:pointer}.chip.cams button.on{background:var(--ink);color:#fff}.chip.cams button:disabled{opacity:.4;cursor:not-allowed}
 .chip b{color:var(--blue)} .chip.p{background:var(--ink);color:#fff;border-color:var(--ink)} .chip.p b{color:#ffd166}
+#compHud{position:absolute;left:50%;bottom:152px;transform:translateX(-50%);display:none;padding:6px 14px;text-align:center;pointer-events:none;min-width:250px}
+#compHud .ct{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink2);font-weight:700}
+#compHud .cr{display:flex;gap:18px;align-items:baseline;justify-content:center}
+#compHud .cn{font:700 26px/1.1 var(--mono,monospace)} #compHud .cn small{font-size:14px;color:var(--ink2)}
+#compHud .tm{font:700 22px/1.1 var(--mono,monospace)}
+#compHud .dots{display:flex;gap:3px;justify-content:center;margin:3px 0;flex-wrap:wrap}
+#compHud .dots i{width:9px;height:9px;border-radius:50%;background:#c9d1d8;border:1px solid #7b8794}
+#compHud .dots i.ok{background:#2ecc71;border-color:#1b8a4b} #compHud .dots i.nx{background:#ffd23f;border-color:#a67c00;transform:scale(1.35)}
+#compHud .nxt{font-size:12px;font-family:var(--mono,monospace)} #compHud .bst{font-size:11px;color:var(--ink2)}
+#compHud.fin{border-color:var(--green)} #compHud.bad{border-color:var(--red)}
 #alerts{position:absolute;left:50%;top:48px;transform:translateX(-50%);display:flex;flex-direction:column;gap:4px;align-items:center;max-width:46%;pointer-events:none}
 .al{font-weight:700;font-size:12.5px;letter-spacing:.04em;padding:4px 12px;border:1px solid;border-radius:2px;background:rgba(255,255,255,.95)}
 .al.i{border-color:var(--blue);color:var(--blue)} .al.w{border-color:var(--amber);background:var(--amberbg);color:#7a4a00} .al.c{border-color:var(--red);background:var(--redbg);color:var(--red);animation:blink 0.9s steps(2) infinite}
@@ -205,6 +215,7 @@ table.bud{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:
   <div id="osd"></div>
   <div id="chips"></div>
   <div id="alerts"></div>
+  <div id="compHud" class="panel"></div>
   <aside id="left" class="panel"></aside>
   <aside id="right" class="panel">
     <div class="ph"><span>Mapa</span><span id="mapinfo"></span></div>
@@ -288,6 +299,11 @@ table.bud{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:
           <div class="row"><label>Cometas (con hilo)</label><div class="val"><input type="range" id="oKites" min="0" max="10" step="1"><span id="oKitesV"></span></div></div>
           <label class="chk"><input type="checkbox" id="oPeople"><div>Personas en el terreno<small>Quietas, caminando y en aglomeraciones. No las sobrevueles y mantente lejos de los grupos.</small></div></label>
           <div class="note" id="actNote" style="display:none">En interior no hay aves, cometas ni personas.</div>
+        </div></div>
+        <div class="card" style="margin-top:14px"><h3>Modo competición</h3><div class="bd">
+          <label class="chk"><input type="checkbox" id="oComp"><div>Recorrido de aros<small>Pasa por los aros en orden: el siguiente se ilumina en amarillo y los superados se ponen en verde. El cronómetro arranca al despegar y se detiene en el último aro. Funciona en cualquier escenario.</small></div></label>
+          <div class="row" style="margin-top:8px"><label>Número de aros</label><div class="val"><input type="range" id="oCompN" min="1" max="20" step="1"><span id="oCompNV"></span></div></div>
+          <div class="note" id="compNote"></div>
         </div></div>
         <div class="card" style="margin-top:14px"><h3>Perturbaciones opcionales</h3><div class="bd">
           <label class="chk"><input type="checkbox" id="oJam"><div>Inhibidor de GNSS (jamming)<small>No hay satélites: el dron pasa a modo ATTI y no funciona el regreso a casa.</small></div></label>
@@ -1881,6 +1897,80 @@ SW.hookActors=function(w){
 };
 })();
 
+/* ===== MODO COMPETICIÓN: recorrido de aros (lógica pura, sin gráficos) ===== */
+(function(){
+var DEG=Math.PI/180;
+function lcg(seed){ var a=(seed>>>0)||1; return function(){ a=(a*1664525+1013904223)>>>0; return a/4294967296; }; }
+SW.compLevel=function(n){ return n<=3?'Muy fácil':(n<=7?'Fácil':(n<=12?'Media':(n<=17?'Difícil':'Experto'))); };
+/* parámetros por dificultad: a más aros, aros más pequeños, más separados y a alturas más distintas */
+SW.compParams=function(n,fixed,indoor){
+  var t=(Math.max(1,Math.min(20,n))-1)/19;
+  if(indoor) return {r:1.9-0.5*t, d0:7, d1:11+5*t, h0:1.4, h1:4+6*t, maxD:38, turn:60+25*t};
+  if(fixed)  return {r:13-6*t, d0:170, d1:240+80*t, h0:45, h1:70+40*t, maxD:900, turn:45+15*t};
+  return {r:4.2-2.0*t, d0:22, d1:32+26*t, h0:2, h1:8+24*t, maxD:220+110*t, turn:55+25*t};
+};
+SW.compGen=function(w,o){
+  var n=Math.max(1,Math.min(20,o.n|0)), P=SW.compParams(n,!!o.fixed,!!w.indoor), rnd=lcg(o.seed||1);
+  var pts=[], px=w.home.x, pz=w.home.z, py=w.homeY+1.5, hd=(w.startHeading||0)*DEG+(rnd()-0.5)*0.3;
+  function ok(x,y,z,r,h,att){
+    if(w.indoor){ var I=w.indoor; if(x<I.x0+r+1||x>I.x1-r-1||z<I.z0+r+1||z>I.z1-r-1||y<r+0.6||y>I.h-r-0.6) return false; }
+    else if(Math.abs(x)>SW.EXT*0.85||Math.abs(z)>SW.EXT*0.85) return false;
+    if(Math.hypot(x-w.home.x,z-w.home.z)>P.maxD) return false;
+    if(y-r<w.floorH(x,1e6,z)+0.7) return false;
+    var tx=Math.cos(h), tz=Math.sin(h);
+    for(var k=0;k<8;k++){ var a=k*Math.PI/4, sx=x+tx*Math.cos(a)*r, sy=y+Math.sin(a)*r, sz=z+tz*Math.cos(a)*r;
+      if(sy<w.floorH(sx,1e6,sz)+0.4) return false; if(w.collide(sx,sy,sz,0.9)) return false; }
+    if(w.collide(x,y,z,0.9)) return false;
+    if(att<110){ var dx=x-px, dy=y-py, dz=z-pz, L=Math.sqrt(dx*dx+dy*dy+dz*dz)||1; if(w.ray(px,py,pz,dx/L,dy/L,dz/L,L).hit) return false; }
+    return true;
+  }
+  for(var i=0;i<n;i++){
+    var pl=null;
+    for(var att=0;att<160&&!pl;att++){
+      var far=Math.hypot(px-w.home.x,pz-w.home.z)>0.75*P.maxD, turn=P.turn*DEG*(att<40?1:1.7);
+      var h2=far?Math.atan2(w.home.x-px,-(w.home.z-pz))+(rnd()-0.5)*1.4:hd+(rnd()*2-1)*turn;
+      if(i===0&&att<60) h2=hd+(rnd()-0.5)*0.6;
+      var d=P.d0+rnd()*(P.d1-P.d0), x=px+Math.sin(h2)*d, z=pz-Math.cos(h2)*d;
+      var base=w.floorH(x,1e6,z), y=base+Math.max(P.h0+rnd()*(P.h1-P.h0),P.r+1.0);
+      if(w.indoor) y=Math.max(P.r+0.7,Math.min(w.indoor.h-P.r-0.7,y));
+      var md=d*0.45; y=Math.max(py-md,Math.min(py+md,y)); y=Math.max(y,base+P.r+0.9);
+      if(ok(x,y,z,P.r,h2,att)) pl={x:x,y:y,z:z,h:h2};
+    }
+    if(!pl){   /* último recurso: por encima de lo que haya */
+      var h3=hd, x3=px+Math.sin(h3)*P.d0, z3=pz-Math.cos(h3)*P.d0, y3=w.indoor?Math.min(w.indoor.h-P.r-0.7,py+1):Math.max(w.blockTop(x3,z3).top,w.floorH(x3,1e6,z3))+P.r+3;
+      pl={x:x3,y:y3,z:z3,h:h3};
+    }
+    pts.push(pl); hd=pl.h; px=pl.x; py=pl.y; pz=pl.z;
+  }
+  /* normal de cada aro = bisectriz de la entrada y la salida */
+  return pts.map(function(p,i){
+    var a=i?pts[i-1]:{x:w.home.x,z:w.home.z}, ix=p.x-a.x, iz=p.z-a.z, il=Math.hypot(ix,iz)||1; ix/=il; iz/=il;
+    var ox=ix, oz=iz; if(i<pts.length-1){ var b=pts[i+1]; ox=b.x-p.x; oz=b.z-p.z; var ol=Math.hypot(ox,oz)||1; ox/=ol; oz/=ol; }
+    var nx=ix+ox, nz=iz+oz, nl=Math.hypot(nx,nz); if(nl<0.3){ nx=ix; nz=iz; nl=1; }
+    return {k:i,x:p.x,y:p.y,z:p.z,r:P.r,nx:nx/nl,nz:nz/nl};
+  });
+};
+SW.compNew=function(){ return {idx:0,t:0,running:false,done:false,failed:false,splits:[],prev:null,miss:0,missT:-9}; };
+/* devuelve 1 = aro superado, 2 = recorrido completado, -1 = pasó por fuera */
+SW.compStep=function(s,R,pos,dt,flying){
+  if(s.done||s.failed){ s.prev=null; return 0; }
+  if(!s.running&&flying) s.running=true;
+  if(s.running) s.t+=dt;
+  var res=0, g=R[s.idx], p=s.prev;
+  if(g&&p){
+    var s0=(p.x-g.x)*g.nx+(p.z-g.z)*g.nz, s1=(pos.x-g.x)*g.nx+(pos.z-g.z)*g.nz;
+    if(s0!==s1&&((s0<=0&&s1>0)||(s0>=0&&s1<0))){
+      var u=s0/(s0-s1), ix=p.x+(pos.x-p.x)*u, iy=p.y+(pos.y-p.y)*u, iz=p.z+(pos.z-p.z)*u;
+      var lat=(ix-g.x)*(-g.nz)+(iz-g.z)*g.nx, dy=iy-g.y, dist=Math.hypot(lat,dy);
+      if(dist<=g.r){ s.splits.push(s.t); s.idx++; res=1; if(s.idx>=R.length){ s.done=true; s.running=false; res=2; } }
+      else if(dist<=g.r*2.5){ s.miss++; s.missT=s.t; res=-1; }
+    }
+  }
+  s.prev={x:pos.x,y:pos.y,z:pos.z};
+  return res;
+};
+})();
+
 /* ===== ESCENA 3D (three.js) ===== */
 var R3D = {};
 (function(){
@@ -1938,7 +2028,7 @@ function canvasTex(w,h,fn,rep){ var c=document.createElement('canvas'); c.width=
 
 function lin(v){ return v<=0.04045?v/12.92:Math.pow((v+0.055)/1.055,2.4); }
 R3D.loadWorld=function(w){
-  world=w; disposeGroup(S.worldGroup); dyn=[]; trailPts=[];
+  S.rings=null; world=w; disposeGroup(S.worldGroup); dyn=[]; trailPts=[];
   var G=S.worldGroup, EXT=SW.EXT;
   /* terreno */
   var flat=(w.id==='campo'||w.id==='aeropuerto'||w.id==='ciudad'||w.id==='barrio');
@@ -2241,6 +2331,35 @@ R3D.update=function(f,dt,opts){
   }
   S.r.render(S.scene,cam);
 };
+/* aros del modo competición */
+R3D.setRings=function(rings){
+  if(S.rings&&S.rings.grp){ S.worldGroup.remove(S.rings.grp); disposeGroup(S.rings.grp); }
+  S.rings=null; if(!rings||!rings.length) return;
+  var grp=new THREE.Group(), items=[];
+  rings.forEach(function(g,i){
+    var it=new THREE.Group(); it.position.set(g.x,g.y,g.z); it.rotation.y=Math.atan2(g.nx,g.nz);
+    var tube=Math.max(0.14,g.r*0.075);
+    var mat=new THREE.MeshBasicMaterial({color:0xff7a1a,fog:false});
+    var tor=new THREE.Mesh(new THREE.TorusGeometry(g.r,tube,10,48),mat); it.add(tor);
+    var dmat=new THREE.MeshBasicMaterial({color:0xffe14a,transparent:true,opacity:0.18,side:THREE.DoubleSide,depthWrite:false,fog:false});
+    var disc=new THREE.Mesh(new THREE.CircleGeometry(g.r,40),dmat); disc.visible=false; it.add(disc);
+    var fl=world.floorH(g.x,g.y,g.z), ph=g.y-g.r-fl;
+    if(ph>0.3){ var pole=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,ph,6),new THREE.MeshBasicMaterial({color:0x6b7785,transparent:true,opacity:0.55,fog:false})); pole.position.set(0,-g.r-ph/2,0); it.add(pole); }
+    var tex=canvasTex(64,64,function(c,W,H){ c.fillStyle='rgba(20,40,58,0.85)'; c.beginPath(); c.arc(32,32,30,0,6.3); c.fill(); c.fillStyle='#fff'; c.font='bold 34px sans-serif'; c.textAlign='center'; c.textBaseline='middle'; c.fillText(String(i+1),32,35); });
+    var sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,depthTest:false,fog:false})); sp.position.set(0,g.r+tube+Math.max(0.9,g.r*0.35),0); sp.scale.set(Math.max(1.6,g.r*0.7),Math.max(1.6,g.r*0.7),1); sp.renderOrder=20; it.add(sp);
+    grp.add(it); items.push({tor:tor,mat:mat,disc:disc,dmat:dmat,sp:sp,r:g.r});
+  });
+  S.worldGroup.add(grp); S.rings={grp:grp,items:items,last:-2};
+};
+R3D.updateRings=function(idx,done,tms){
+  var R=S.rings; if(!R) return;
+  R.items.forEach(function(it,i){
+    var passed=done||i<idx, nxt=!done&&i===idx;
+    it.mat.color.setHex(passed?0x2ecc71:(nxt?0xffe14a:0xff7a1a));
+    it.disc.visible=nxt; var p=nxt?1+0.06*Math.sin(tms/180):1; it.tor.scale.set(p,p,1); it.dmat.opacity=nxt?0.14+0.1*Math.sin(tms/180):0;
+    it.sp.material.opacity=passed?0.45:1;
+  });
+};
 R3D.setUptilt=function(d){S.uptilt=d;};
 R3D.clearTrail=function(){ trailPts=[]; if(S.trail) S.trail.geometry.setDrawRange(0,0); };
 R3D.worldRef=function(){return world;};
@@ -2343,7 +2462,7 @@ var ST=SIM.ST={
   cfg:Object.assign({type:'quad'},SD.STD.quad),
   wxId:'brisa', wx:Object.assign({},SD.WX.brisa), tod:'dia', elevOv:null,
   scn:'campo', jam:false, rfNoise:0, trail:true,
-  lat:36.7770, lon:-4.3930, dtMode:'now', dtDate:'', dtTime:'', birds:0, kites:0, people:false, apText:'', apOn:false,
+  lat:36.7770, lon:-4.3930, dtMode:'now', dtDate:'', dtTime:'', birds:0, kites:0, people:false, comp:{on:false,n:5}, apText:'', apOn:false,
   rf:{cl:'elrs24',cp:100,ca:'omni',vl:'ana58',vp:25,va:'omni',fl:'rth',fb:'rth',alt:30,obs:false}
 };
 try{ var sv=JSON.parse(localStorage.getItem('santsim_v1')||'null'); if(sv&&sv.cfg&&sv.rf){ Object.assign(ST,sv); ST.wx=Object.assign({},SD.WX.brisa,sv.wx); } }catch(e){}
@@ -2405,6 +2524,11 @@ function fillProps(){
   if(list.indexOf(ST.cfg.prop)<0 && kind!=='heli') ST.cfg.prop=list[0];
 }
 function D(id){return SD.byId(SD.TYPES,id);}
+function compTxt(){
+  var n=ST.comp.n, fx=(SD.byId(SD.TYPES,ST.cfg.type)||{}).kind==='fixed', P=SW.compParams(n,fx,ST.scn==='nave');
+  $('oCompNV').textContent=n+(n===1?' aro':' aros')+' · '+SW.compLevel(n);
+  $('compNote').innerHTML='Nivel <b>'+SW.compLevel(n)+'</b>: aros de <b>'+(P.r*2).toFixed(1)+' m</b> de diámetro, separados <b>'+Math.round(P.d0)+'–'+Math.round(P.d1)+' m</b>, a alturas de hasta <b>'+Math.round(P.h1)+' m</b> sobre el suelo. A más aros, aros más pequeños, más separados y a alturas más distintas. Cada vuelo nuevo genera un recorrido distinto; <b>Reiniciar</b> repite el mismo.'+(ST.comp.on?'':' <i>(Desactivado)</i>');
+}
 function commList(){ return SD.COMM||[]; }
 function buildComm(){
   var s=$('cComm'); if(!s) return; s.innerHTML='<option value="">Configuración libre (eliges los componentes)</option>';
@@ -2488,7 +2612,7 @@ function syncCtrls(){
   /* meteo */
   document.querySelectorAll('#wxPre .btn').forEach(function(b){ b.classList.toggle('on',b.dataset.k===ST.wxId); });
   syncTime();
-  $('oBirds').value=ST.birds; $('oBirdsV').textContent=ST.birds?ST.birds+' / 10':'sin aves'; $('oKites').value=ST.kites; $('oKitesV').textContent=ST.kites?ST.kites+' / 10':'sin cometas'; $('oPeople').checked=ST.people;
+  $('oBirds').value=ST.birds; $('oBirdsV').textContent=ST.birds?ST.birds+' / 10':'sin aves'; $('oKites').value=ST.kites; $('oKitesV').textContent=ST.kites?ST.kites+' / 10':'sin cometas'; $('oPeople').checked=ST.people; if(!ST.comp) ST.comp={on:false,n:5}; $('oComp').checked=!!ST.comp.on; $('oCompN').value=ST.comp.n; compTxt();
   var indoor=(ST.scn==='nave'); $('oBirds').disabled=indoor; $('oKites').disabled=indoor; $('oPeople').disabled=indoor; $('actNote').style.display=indoor?'block':'none';
   var elev=ST.elevOv!==null?ST.elevOv:SW_ELEV(ST.scn);
   document.querySelectorAll('#wxSl input').forEach(function(i){ var k=i.dataset.w, v=(k==='elev')?elev:ST.wx[k]; i.value=v; var s=i.parentNode.querySelector('span'); s.textContent=(k==='vis'?(+v).toFixed(1):v)+''; });
@@ -2597,6 +2721,8 @@ function wire(){
   $('oBirds').oninput=function(){ ST.birds=+$('oBirds').value; $('oBirdsV').textContent=ST.birds?ST.birds+' / 10':'sin aves'; SIM.save(); };
   $('oKites').oninput=function(){ ST.kites=+$('oKites').value; $('oKitesV').textContent=ST.kites?ST.kites+' / 10':'sin cometas'; SIM.save(); };
   $('oPeople').onchange=function(){ ST.people=$('oPeople').checked; SIM.save(); };
+  $('oComp').onchange=function(){ ST.comp.on=$('oComp').checked; compTxt(); SIM.save(); };
+  $('oCompN').oninput=function(){ ST.comp.n=+$('oCompN').value; compTxt(); SIM.save(); };
   $('wxSl').oninput=function(e){ var k=e.target.dataset.w; if(!k) return; var v=parseFloat(e.target.value); if(k==='elev') ST.elevOv=v; else ST.wx[k]=v; ST.wxId='custom'; e.target.parentNode.querySelector('span').textContent=(k==='vis'?v.toFixed(1):v); document.querySelectorAll('#wxPre .btn').forEach(function(b){b.classList.remove('on');}); SIM.validate(); SIM.save(); };
   $('scnList').onclick=function(e){ var d=e.target.closest('.sc'); if(!d) return; ST.scn=d.dataset.id; ST.elevOv=null; var m=SW.LIST.filter(function(x){return x.id===ST.scn;})[0]; var DEF=[36.7770,-4.3930], pre=SW.LIST.filter(function(x){return x.lat;}).map(function(x){return [x.lat,x.lon];}); pre.push(DEF); if(pre.some(function(p){return Math.abs(p[0]-ST.lat)<1e-6&&Math.abs(p[1]-ST.lon)<1e-6;})){ var t=m.lat?[m.lat,m.lon]:DEF; ST.lat=t[0]; ST.lon=t[1]; syncTime(); }
     if(ST.wxId!=='custom'||true){ ST.wxId=m.wx; ST.wx=Object.assign({},SD.WX[m.wx]); } syncCtrls(); syncAfter(); };
@@ -3173,6 +3299,7 @@ H.drawMap=function(f,w,d,wx){
   g.strokeStyle='#c27a00'; g.beginPath(); g.arc(hm.x,hm.z,d.vlos,0,6.3); g.stroke(); g.setLineDash([]);
   /* estela */
   if(ST.trail && H.log.length>1){ g.strokeStyle='#e2552d'; g.lineWidth=2/k; g.beginPath(); H.log.forEach(function(s,i){ if(i%2) return; if(i===0)g.moveTo(s.x,s.z); else g.lineTo(s.x,s.z); }); g.lineTo(f.pos.x,f.pos.z); g.stroke(); }
+  if(SIM.compDrawMap) SIM.compDrawMap(g,k);
   /* casa */
   g.fillStyle='#f5c842'; g.strokeStyle='#14283a'; g.lineWidth=2/k; g.beginPath(); g.arc(hm.x,hm.z,5/k,0,6.3); g.fill(); g.stroke();
   /* aves, cometas y personas */
@@ -3268,7 +3395,7 @@ function applyLive(){
   timeSetup(); R3D.setWeather(wxLive,ST.tod,world.sun);
 }
 function timeSetup(){ world.timeMs0=SIM.flightMs(); SIM.syncTod(); world.sun=SIM.sunAt(world.timeMs0); }
-function sigNow(){ return JSON.stringify({c:ST.cfg,s:ST.scn,b:ST.birds,k:ST.kites,p:ST.people}); }
+function sigNow(){ return JSON.stringify({c:ST.cfg,s:ST.scn,b:ST.birds,k:ST.kites,p:ST.people,q:ST.comp}); }
 function newFlight(){
   var V=SIM.validate(); if(V.errors.length) return false;
   world=SW.make(ST.scn); world.elev=SIM.elev();
@@ -3280,11 +3407,75 @@ function newFlight(){
   H.setRaster(SIM.mapRaster(world,512,world.mapExt||SW.EXT)); H.setZoom(world.mapZoom||(world.mapExt?45:1000));
   sig=sigNow();
   var cam=SIM.camMode; if(cam==='fpv' && !hasCam()) cam='vlos'; setCam(cam);
-  keysPanel(); resetCommon(); return true;
+  keysPanel(); compInit(); resetCommon(); return true;
 }
 function resetCommon(){
+  compReset();
   H.logClear(); R3D.clearTrail(); cmd={pitch:0,roll:0,yaw:0,thr:0}; acc=0; landShown=false; hideMsg(); paused=false; syncPause();
   if(F){ var h=F.world.home; R3D.update(F,0,ropts()); }
+}
+/* ---------- modo competición ---------- */
+var COMP={rings:[],st:null,seed:0,best:0};
+function compOn(){ return COMP.rings.length>0&&COMP.st; }
+function compKey(){ return 'santsim_comp_'+ST.scn+'_'+COMP.rings.length+(F&&F.ac.kind==='fixed'?'_f':'_m'); }
+function compBest(){ try{ return +localStorage.getItem(compKey())||0; }catch(e){ return 0; } }
+function fmtT(t){ var m=Math.floor(t/60), s=t-m*60; return (m<10?'0':'')+m+':'+(s<10?'0':'')+s.toFixed(1); }
+function compInit(){
+  COMP.rings=[]; COMP.st=null; R3D.setRings([]);
+  if(!(ST.comp&&ST.comp.on)){ $('compHud').style.display='none'; return; }
+  COMP.seed=(Math.random()*1e9)|0;
+  COMP.rings=SW.compGen(world,{n:ST.comp.n,fixed:F.ac.kind==='fixed',seed:COMP.seed});
+  R3D.setRings(COMP.rings);
+}
+function compReset(){
+  if(!COMP.rings.length) return;
+  COMP.st=SW.compNew(); COMP.best=compBest(); R3D.updateRings(0,false,0); compHud();
+}
+function compTick(dt){
+  var s=COMP.st; if(!s) return;
+  if(F.status==='crashed'){ if(!s.failed&&!s.done){ s.failed=true; s.running=false; } return; }
+  var fl=F.status==='flying'||(F.status==='rolling'&&F.hspeed()>1);
+  var r=SW.compStep(s,COMP.rings,F.pos,dt,fl);
+  if(r>0){ AUD.event(r===2?'land':'chute'); }
+  if(r===2) compFinish();
+}
+function compFinish(){
+  var s=COMP.st, n=COMP.rings.length, prev=COMP.best, rec=!prev||s.t<prev-1e-6;
+  if(rec){ try{ localStorage.setItem(compKey(),String(s.t)); }catch(e){} COMP.best=s.t; }
+  var sp=''; s.splits.forEach(function(t,i){ sp+=(i?' · ':'')+(i+1)+': '+fmtT(t); });
+  showMsg('ok','RECORRIDO COMPLETADO','<b>'+n+(n===1?' aro':' aros')+' en '+fmtT(s.t)+'</b>'+(rec?' <b style="color:var(--green)">· ¡Nuevo récord!</b>':'')+'<br>Nivel '+SW.compLevel(n)+(prev&&!rec?' · Mejor tiempo '+fmtT(prev):'')+(s.miss?' · Aros fallados por fuera: '+s.miss:'')+'<br><small>Parciales — '+sp+'</small>','Seguir volando');
+}
+function compHud(){
+  var el=$('compHud'); if(!compOn()||hangarOpen){ el.style.display='none'; return; }
+  var s=COMP.st, R=COMP.rings, n=R.length, h='';
+  el.style.display='block'; el.className='panel'+(s.done?' fin':(s.failed?' bad':''));
+  var dots=''; for(var i=0;i<n;i++) dots+='<i class="'+(i<s.idx?'ok':(i===s.idx&&!s.done?'nx':''))+'"></i>';
+  var nx='';
+  if(s.done) nx='<b style="color:var(--green)">¡Completado!</b>';
+  else if(s.failed) nx='<b style="color:var(--red)">Siniestro · '+s.idx+' de '+n+' aros</b>';
+  else { var g=R[s.idx], dx=g.x-F.pos.x, dy=g.y-F.pos.y, dz=g.z-F.pos.z; nx='Aro '+(s.idx+1)+': <b>'+Math.round(Math.hypot(dx,dy,dz))+' m</b> · '+(dy>=0?'▲ +':'▼ ')+Math.round(dy)+' m'+((SIM.camMode!=='vlos')?'':'')+(s.t-s.missT<2.5&&s.miss?' · <span style="color:var(--red)">¡por fuera!</span>':''); }
+  el.innerHTML='<div class="ct">Modo competición · '+SW.compLevel(n)+'</div><div class="cr"><div class="cn">'+s.idx+'<small> / '+n+'</small></div><div class="tm">'+fmtT(s.t)+'</div></div><div class="dots">'+dots+'</div><div class="nxt">'+nx+'</div>'+(COMP.best?'<div class="bst">Mejor: '+fmtT(COMP.best)+'</div>':'');
+}
+SIM.compDrawMap=function(g,k){
+  if(!compOn()) return; var s=COMP.st;
+  COMP.rings.forEach(function(r,i){
+    var tx=-r.nz*r.r, tz=r.nx*r.r, passed=i<s.idx||s.done, nxt=!s.done&&i===s.idx;
+    g.strokeStyle=passed?'#1b9a52':(nxt?'#e6a800':'#e0661a'); g.lineWidth=(nxt?4:3)/k; g.lineCap='round';
+    g.beginPath(); g.moveTo(r.x-tx,r.z-tz); g.lineTo(r.x+tx,r.z+tz); g.stroke();
+    g.fillStyle='#14283a'; g.font='bold '+(10/k)+'px sans-serif'; g.fillText(String(i+1),r.x+4/k,r.z-4/k); });
+  g.lineCap='butt';
+};
+function compMark(g,W,Hh){
+  if(!compOn()||COMP.st.done||COMP.st.failed) return;
+  var R=COMP.rings[COMP.st.idx], pr=R3D.project(new THREE.Vector3(R.x,R.y,R.z));
+  var dist=Math.hypot(R.x-F.pos.x,R.y-F.pos.y,R.z-F.pos.z), inFront=pr.z<1, m=34;
+  var on=inFront&&pr.x>m&&pr.x<W-m&&pr.y>m&&pr.y<Hh-m;
+  g.lineWidth=2; g.strokeStyle='#a67c00'; g.fillStyle='#ffd23f'; g.font='bold 12px monospace';
+  if(on){ if(dist>25){ g.beginPath(); g.arc(pr.x,pr.y,16,0,6.3); g.stroke(); } g.fillStyle='#14283a'; g.fillText((COMP.st.idx+1)+' · '+Math.round(dist)+' m',pr.x+20,pr.y-14); }
+  else { var cx=W/2, cy=Hh/2, vx=pr.x-cx, vy=pr.y-cy; if(!inFront){ vx=-vx; vy=-vy; } var L=Math.hypot(vx,vy)||1; vx/=L; vy/=L;
+    var ex=Math.max(-1e9,Math.min(1e9,0)), t=Math.min((W/2-m)/Math.abs(vx||1e-6),(Hh/2-m)/Math.abs(vy||1e-6)), px=cx+vx*t, py=cy+vy*t;
+    g.save(); g.translate(px,py); g.rotate(Math.atan2(vy,vx)); g.beginPath(); g.moveTo(14,0); g.lineTo(-10,-11); g.lineTo(-10,11); g.closePath(); g.fill(); g.stroke(); g.restore();
+    g.fillStyle='#14283a'; g.fillText(Math.round(dist)+' m',px-18-vx*8,py+4-vy*14); }
 }
 function resetFlight(){ if(!F) return; applyLive(); F.reset(); resetCommon(); }
 function hasCam(){ return F && (F.ac.has('camfpv')||F.ac.has('camhd')||F.ac.has('camir')); }
@@ -3440,6 +3631,7 @@ function toggleHelp(){
   +'<h4>Pilotaje</h4><table><tr><td><kbd>W</kbd> / <kbd>S</kbd></td><td>Multirrotor: subir / bajar. Ala fija: más / menos gas (el gas se mantiene).</td></tr><tr><td><kbd>A</kbd> / <kbd>D</kbd></td><td>Girar a izquierda / derecha (guiñada). En ala fija: timón de dirección.</td></tr><tr><td><kbd>↑</kbd> <kbd>↓</kbd></td><td>Multirrotor: avanzar / retroceder. Ala fija: morro abajo / morro arriba.</td></tr><tr><td><kbd>←</kbd> <kbd>→</kbd></td><td>Desplazamiento lateral. Ala fija: alabeo (inclinar para virar).</td></tr></table>'
   +'<h4>Simulación</h4><table><tr><td><kbd>Espacio</kbd> / <kbd>P</kbd></td><td>Pausa: congela todo y muestra los datos del instante (CSV, paso a paso con <kbd>N</kbd>).</td></tr><tr><td><kbd>R</kbd></td><td>Reiniciar el vuelo (mismas condiciones).</td></tr><tr><td><kbd>Esc</kbd></td><td>Hangar: cambiar dron, meteorología, escenario y radio.</td></tr><tr><td><kbd>T</kbd></td><td>Velocidad de simulación 1× / 2× / ½× / ¼×.</td></tr><tr><td><kbd>C</kbd> o <kbd>1</kbd>–<kbd>4</kbd></td><td>Cámara: a la vista · FPV · seguimiento · cenital. <kbd>Z</kbd> zoom en vista a la vista.</td></tr><tr><td><kbd>M</kbd> <kbd>+</kbd> <kbd>−</kbd></td><td>Zoom del mapa (también con la rueda).</td></tr><tr><td><kbd>I</kbd> <kbd>U</kbd> <kbd>G</kbd> <kbd>L</kbd></td><td>Inspector · ocultar paneles · estela · panel de distancias LiDAR.</td></tr><tr><td><kbd>K</kbd></td><td>Sonido sí / no (motores, viento, lluvia, impactos y avisos; sintetizado, se silencia en pausa).</td></tr></table>'
   +'<h4>Emisora real (USB, cable o dongle)</h4><p>Conecta la emisora en modo «USB Joystick (HID)», abre la pestaña <b>Emisora real</b> del hangar y mueve un stick: se detecta sola. Elige un perfil (AETR, TAER o mando de consola), pulsa «Detectar» para asignar ejes e interruptores y «Calibrar» si hace falta. Chrome o Edge recomendados.</p>'
+  +'<h4>Modo competición</h4><p>Activa «Modo competición» en la pestaña <b>Escenario</b> y elige de 1 a 20 aros. Pasa por ellos en orden: el siguiente brilla en amarillo, los superados se ponen verdes y las flechas te indican hacia dónde está. El cronómetro empieza al despegar y se para en el último aro. Se guarda tu mejor tiempo por escenario y número de aros. <kbd>R</kbd> repite el mismo recorrido; un vuelo nuevo genera otro.</p>'
   +'<h4>Sistemas de a bordo</h4><table><tr><td><kbd>H</kbd></td><td>Regreso a casa (RTH) on/off. Requiere GNSS.</td></tr><tr><td><kbd>B</kbd></td><td>Aterrizaje suave asistido en el punto donde estés (también fuera de pista). Mover el acelerador lo cancela.</td></tr><tr><td><kbd>Q</kbd></td><td>Alternar GPS ↔ ATTI (multirrotores).</td></tr><tr><td><kbd>F</kbd></td><td>Provocar un fallo de motor (observa la redundancia de 3, 4, 6 y 8 rotores).</td></tr><tr><td><kbd>X</kbd></td><td>Paracaídas (si está instalado): corta motores y frena la caída.</td></tr></table>'
   +'<h4>Cómo leer los avisos</h4><p>Valores y alertas en <b style="color:#c27a00">ámbar</b> son avisos; en <b style="color:#c0272d">rojo parpadeante</b> son críticos. El mapa muestra la zona VLOS (ámbar) y el alcance teórico del enlace en espacio libre (magenta): la diferencia con la realidad es la pérdida por obstáculos, lluvia, ruido y patrón de antena.</p>'
   +'<p style="margin-top:12px"><button class="btn pri" onclick="document.getElementById(\'help\').style.display=\'none\'">Cerrar</button></p>';
@@ -3467,6 +3659,7 @@ function markOverlay(d){
     var vis=Math.max(0,1-dist/Math.max(60,Math.min(wxLive.vis*1000, d.vlos*1.4)));
     if(px<26){ g.strokeStyle='#b0245d'; g.lineWidth=1.5; g.beginPath(); g.arc(pr.x,pr.y,16,0,6.3); g.stroke(); g.fillStyle='#b0245d'; g.font='11px monospace'; g.fillText(dist.toFixed(0)+' m · '+(F.agl()).toFixed(0)+' m alt',pr.x+20,pr.y+4); g.fillText('tamaño aparente '+(ang*1000).toFixed(2)+' mrad',pr.x+20,pr.y+18); }
   }
+  compMark(g,W,Hh);
   /* marcador de casa */
   var hv=new THREE.Vector3(world.home.x,world.homeY+3,world.home.z), hp=R3D.project(hv);
   if(SIM.camMode!=='vlos'&&hp.z<1&&hp.x>0&&hp.x<W&&hp.y>0&&hp.y<Hh){ g.strokeStyle='#d99500'; g.fillStyle='#f5c842'; g.lineWidth=1.5; g.beginPath(); g.moveTo(hp.x,hp.y); g.lineTo(hp.x-6,hp.y-12); g.lineTo(hp.x+6,hp.y-12); g.closePath(); g.fill(); g.stroke(); g.fillStyle='#14283a'; g.font='bold 10px sans-serif'; g.fillText('CASA',hp.x-12,hp.y-16); }
@@ -3522,21 +3715,22 @@ function frame(ts){
   var simDt=0;
   if(!paused){
     acc+=dtR*speed; var n=0;
-    while(acc>=HZ&&n<14){ slew(HZ); world.update(F.t); F.step(HZ,cmd); acc-=HZ; n++; simDt+=HZ; }
+    while(acc>=HZ&&n<14){ slew(HZ); world.update(F.t); F.step(HZ,cmd); compTick(HZ); acc-=HZ; n++; simDt+=HZ; }
     if(n>=14) acc=0;
   } else if(stepOnce){
-    for(var i=0;i<12;i++){ slew(HZ); world.update(F.t); F.step(HZ,cmd); } stepOnce=false; simDt=0; renderInspector();
+    for(var i=0;i<12;i++){ slew(HZ); world.update(F.t); F.step(HZ,cmd); compTick(HZ); } stepOnce=false; simDt=0; renderInspector();
   }
   R3D.update(F,paused?0:dtR*speed,ropts());
+  if(COMP.st) R3D.updateRings(COMP.st.idx,COMP.st.done,ts);
   glareTick();
   { var hp0=F.world.home, ddx=F.pos.x-hp0.x, ddy=F.pos.y-(F.world.homeY+1.7), ddz=F.pos.z-hp0.z; AUD.update(F,{paused:paused,cam:SIM.camMode,dist:Math.sqrt(ddx*ddx+ddy*ddy+ddz*ddz),rain:wxLive?wxLive.rain:0}); }
   if(ts-lastHud>80){
-    lastHud=ts;
+    lastHud=ts; compHud();
     var d=H.data(F,world,wxLive);
     if(!paused||!F._hudDone){ H.updateCells(d,F); H.renderAlerts(H.alerts(d,F,world,wxLive)); H.compliance(d,F,world,wxLive); H.drawMap(F,world,d,wxLive); chips(d); } H.drawLidar(F,world); { var vh=viewHeading(); H.drawCompass(F,d,vh.hd,vh.top); }
     if(!paused) H.logTick(F,d); H.drawChart(); videoFx(d,ts); markOverlay(d);
     F._hudDone=paused;
-    if(F.status==='crashed' && $('msg').style.display==='none') showMsg('crash','SINIESTRO',F.crashMsg+'<br><small>Pausa y revisa los datos del instante, o reinicia el vuelo.</small>','Reiniciar vuelo');
+    if(F.status==='crashed' && $('msg').style.display==='none') showMsg('crash','SINIESTRO',F.crashMsg+(compOn()?'<br><b>Competición: '+COMP.st.idx+' de '+COMP.rings.length+' aros</b>':'')+'<br><small>Pausa y revisa los datos del instante, o reinicia el vuelo.</small>','Reiniciar vuelo');
     if((F.status==='landed'||F.status==='rolling'&&F.hspeed()<0.5) && F.flightT>6 && !landShown && F.landMsg){ landShown=true;
       showMsg('ok','ATERRIZAJE','<b>'+F.landMsg+'</b><br>Tiempo de vuelo '+F.flightT.toFixed(0)+' s · distancia '+F.dist.toFixed(0)+' m · altura máx. '+F.maxAlt.toFixed(0)+' m · alejamiento máx. '+F.maxDist.toFixed(0)+' m · vel. máx. '+(F.maxSpd*3.6).toFixed(0)+' km/h · consumo '+(F.ahUsed*1000).toFixed(0)+' mAh ('+(F.dod*100).toFixed(0)+' %)','Continuar'); }
     if(F.status==='flying') landShown=false;
@@ -3577,7 +3771,7 @@ SIM.boot=function(){
   world=SW.make(ST.scn); R3D.loadWorld(world); world.timeMs0=SIM.flightMs(); SIM.syncTod(); world.sun=SIM.sunAt(world.timeMs0); R3D.setWeather(Object.assign({},ST.wx),ST.tod,world.sun);
   $('bFly').textContent='Volar ▶';
   requestAnimationFrame(frame);
-  window.SIMDBG={get F(){return F;},get world(){return world;},cmd:cmd,keys:keys,start:function(){flyPressed();},ST:ST,hud:H,setCam:setCam,pause:togglePause};
+  window.SIMDBG={get F(){return F;},get world(){return world;},cmd:cmd,keys:keys,start:function(){flyPressed();},ST:ST,get COMP(){return COMP;},hud:H,setCam:setCam,pause:togglePause};
 };
 $('tabs').addEventListener('click',function(){});
 document.addEventListener('DOMContentLoaded',function(){ SIM.boot(); });

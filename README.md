@@ -35,6 +35,12 @@ Simulador de drones que funciona en el navegador, sin instalar nada y sin conexi
 
 ![Pasarela de madera del Guadalhorce](img/guadalhorce-pasarela.png)
 
+**Modo competición** (opcional, en cualquier escenario): recorrido de 1 a 20 aros a distintas alturas. El siguiente aro se ilumina en amarillo y los superados se ponen en verde; hay flechas que indican hacia dónde está, cronómetro con tiempos parciales y mejor tiempo guardado. A más aros, aros más pequeños, más separados y a alturas más distintas.
+
+![Modo competición: aros, cronómetro y mapa](img/competicion.png)
+
+![Recorrido completado](img/competicion-fin.png)
+
 **Cuatro cámaras**: a la vista (VLOS), FPV, seguimiento y cenital, con mapa y HUD.
 
 ![Vista cenital con mapa y datos de vuelo](img/cenital.png)
