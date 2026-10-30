@@ -2307,6 +2307,9 @@ function buildComm(){
 function syncComm(){
   var c=ST.cfg, cm=c.comm?SD.byId(SD.COMM,c.comm):null; if(c.comm&&!cm){ delete c.comm; }
   $('cComm').value=cm?cm.id:'';
+  ['cFrame','cMotor','cProp','cEsc','cChem','cCap'].forEach(function(id){ var e=$(id), o=e.querySelector('option[data-cm]');
+    if(cm){ if(!o){ o=document.createElement('option'); o.dataset.cm=1; e.insertBefore(o,e.firstChild); } o.value='__cm'; o.textContent=id==='cCap'?cm.cap+' mAh (de la ficha)':'Incluido en el modelo'; e.value='__cm'; }
+    else if(o) o.remove(); });
   ['cType','cFrame','cMotor','cProp','cEsc','cChem','cCells','cCap'].forEach(function(id){ $(id).disabled=!!cm; });
   document.querySelectorAll('#accList input').forEach(function(i){ var b=cm&&(cm.builtin.indexOf(i.dataset.a)>=0||!cm.allowAcc); i.disabled=!!b; i.parentNode.style.opacity=b?0.55:1; });
   $('cPay').disabled=!!cm&&!cm.allowPay;
