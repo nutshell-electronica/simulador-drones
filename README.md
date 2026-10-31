@@ -89,5 +89,5 @@ Simulador de drones que funciona en el navegador, sin instalar nada y sin conexi
 
 ---
 
-Autoría: José Luis Guerrero Marín · Electrónica (IES Politécnico Jesús Marín, Málaga).
+Autoría: José Luis Guerrero Marín.
 Usa [three.js](https://threejs.org/) (licencia MIT), incluido en el archivo.
