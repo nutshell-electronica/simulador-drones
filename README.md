@@ -35,11 +35,18 @@ Simulador de drones que funciona en el navegador, sin instalar nada y sin conexi
 
 ![Pasarela de madera del Guadalhorce](img/guadalhorce-pasarela.png)
 
-**Modo competición** (opcional, en cualquier escenario): recorrido de 1 a 20 aros a distintas alturas. El siguiente aro se ilumina en amarillo y los superados se ponen en verde; hay flechas que indican hacia dónde está, cronómetro con tiempos parciales y mejor tiempo guardado. A más aros, aros más pequeños, más separados y a alturas más distintas.
+**Modo competición** (opcional, en cualquier escenario): recorrido de **1 a 20 aros** a distintas alturas, con cronómetro.
+- El siguiente aro se ilumina en **amarillo**, los pendientes son naranjas y los superados se ponen en **verde**. Cada aro lleva su número y un poste hasta el suelo para valorar la altura.
+- Al pasar bien por un aro suena un *clink* (tipo anillo de Sonic), la pantalla da un destello verde y el aro hace un estallido; al completar el recorrido suena una fanfarria y el destello es dorado.
+- Flechas en pantalla hacia el siguiente aro, distancia y diferencia de altura, aros marcados en el minimapa, tiempos parciales y **mejor tiempo guardado** por escenario y número de aros.
+- **El slider fija la dificultad**: de *muy fácil* (1–3 aros) a *experto* (18–20). A más aros, aros más pequeños (de unos 8 m a 4 m de diámetro), más separados y a alturas más distintas. Adaptado a multirrotores, ala fija y a la nave interior.
+- Cada vuelo nuevo genera un recorrido distinto; **Reiniciar** repite el mismo para intentar mejorar el tiempo.
 
-![Modo competición: aros, cronómetro y mapa](img/competicion.png)
+![Ajustes del modo competición](img/competicion-ajustes.png)
 
-![Recorrido completado](img/competicion-fin.png)
+![Pasando por un aro: destello, cronómetro y mapa](img/competicion-aros.png)
+
+![Recorrido completado con tiempos parciales](img/competicion-fin.png)
 
 **Cuatro cámaras**: a la vista (VLOS), FPV, seguimiento y cenital, con mapa y HUD.
 
@@ -53,7 +60,7 @@ Simulador de drones que funciona en el navegador, sin instalar nada y sin conexi
 - Registro de vuelo con gráficas y exportación a CSV.
 - Pausa, avance paso a paso e inspector de valores.
 - Parámetros de ArduPilot: se puede cargar un archivo `.param` y el simulador aplica los que tienen efecto (de forma aproximada, no es un SITL).
-- Sonido sintetizado de motores y avisos.
+- Sonido sintetizado de motores, viento, lluvia, avisos y aros; se silencia al salir al hangar.
 
 ## Cómo se controla
 
@@ -73,7 +80,7 @@ Simulador de drones que funciona en el navegador, sin instalar nada y sin conexi
 
 - Es un simulador didáctico, no un SITL ni un simulador certificado: la dinámica es simplificada y los parámetros de ArduPilot se interpretan de forma aproximada.
 - En los modelos comerciales, el motor y la hélice equivalentes están estimados (el fabricante no los publica); masa, autonomía y velocidades se ajustan a la ficha.
-- La emisora real se ha probado con un mando simulado; conviene revisar ejes e inversiones con cada radio.
+- La emisora real se ha probado por cable con una radio EdgeTX; el dongle inalámbrico (Spektrum) está pendiente de probar. Conviene revisar ejes e inversiones con cada radio.
 
 ## Archivos
 
