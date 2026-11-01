@@ -2400,12 +2400,29 @@ R3D.buildDrone=function(ac){
 R3D.project=function(v3){ var v=v3.clone().project(S.cam); var c=S.r.domElement; return {x:(v.x*0.5+0.5)*c.clientWidth,y:(-v.y*0.5+0.5)*c.clientHeight,z:v.z}; };
 R3D.dronePos=function(){ return drone?drone.root.position.clone():new THREE.Vector3(); };
 
+/* incendio al caer a la lava */
+var FIRE=null, FN=70;
+function fireUpdate(on,p,dt,size){
+  if(!FIRE){ if(!on) return;
+    var g=new THREE.BufferGeometry(), pos=new Float32Array(FN*3), col=new Float32Array(FN*3), age=new Float32Array(FN);
+    for(var i=0;i<FN;i++) age[i]=Math.random();
+    g.setAttribute('position',new THREE.BufferAttribute(pos,3)); g.setAttribute('color',new THREE.BufferAttribute(col,3));
+    var pts=new THREE.Points(g,new THREE.PointsMaterial({size:Math.max(1.3,size*1.1),map:canvasTex(32,32,function(c,W,H){ var gr=c.createRadialGradient(16,16,0,16,16,16); gr.addColorStop(0,'rgba(255,255,255,1)'); gr.addColorStop(1,'rgba(255,255,255,0)'); c.fillStyle=gr; c.fillRect(0,0,W,H); }),vertexColors:true,transparent:true,opacity:0.55,depthWrite:false,blending:THREE.AdditiveBlending,fog:false}));
+    pts.frustumCulled=false; var lt=new THREE.PointLight(0xff7a22,2,60); S.scene.add(pts); S.scene.add(lt); FIRE={pts:pts,age:age,lt:lt,g:g,t:0}; }
+  FIRE.pts.visible=on; FIRE.lt.visible=on; if(!on) return;
+  FIRE.t+=dt; var pa=FIRE.g.attributes.position, ca=FIRE.g.attributes.color, sp=Math.max(0.8,size*0.6);
+  for(var i=0;i<FN;i++){ var a=FIRE.age[i]+dt*0.9; if(a>=1){ a=0; pa.setXYZ(i,p.x+(Math.random()-0.5)*sp,p.y+Math.random()*0.3,p.z+(Math.random()-0.5)*sp); }
+    else pa.setXYZ(i,pa.getX(i)+(Math.random()-0.5)*dt*1.2,pa.getY(i)+dt*(2.2+3*Math.random()),pa.getZ(i)+(Math.random()-0.5)*dt*1.2);
+    FIRE.age[i]=a; var k=1-a; ca.setXYZ(i,0.35+0.65*k,k*k*0.55,0.02); }
+  pa.needsUpdate=true; ca.needsUpdate=true; FIRE.lt.position.set(p.x,p.y+2,p.z); FIRE.lt.intensity=1.6+Math.random()*1.2;
+}
 /* actualización por fotograma */
 var _v=new THREE.Vector3(), _q=new THREE.Euler();
 R3D.update=function(f,dt,opts){
   if(!drone||!world) return;
   var p=f.pos, ac=f.ac, T=f.t;
   drone.root.position.set(p.x,p.y+drone.dim*0.1,p.z);
+  fireUpdate(f.status==='crashed'&&!!world.lava&&/lava/.test(f.crashMsg||''),p,dt,drone.dim);
   drone.root.rotation.set(-f.pitch,-f.yaw,-f.roll,'YXZ');
   /* hélices */
   var vis=(f.status==='flying'||f.status==='rolling'||f.status==='ground'&&f.Tcur>1)&&f.status!=='crashed';
