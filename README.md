@@ -27,6 +27,9 @@ Simulador de drones que funciona en el navegador, sin instalar nada y sin conexi
 - **Lugares reconocibles de Málaga** (maquetas simplificadas, con las coordenadas GPS de partida correspondientes):
   - **Puerto de Málaga · Muelle Uno**, con La Farola al fondo, yates, un crucero, el Cubo del Pompidou, el Palmeral, la Catedral y Gibralfaro.
   - **Guadalhorce · pasarela de madera** del Paraje Natural, con río, lagunas, dunas y pinar del Arraijanal, el mar al sur y la zona UAS del aeropuerto al oeste.
+- **Escenarios de fantasía** (estilizados, con nombres propios):
+  - **Tierra de cubos**: mundo de bloques de 24 m con llanuras, colinas y montañas nevadas, ríos y un lago, árboles cuadrados, una aldea, una pirámide escalonada, pilares de piedra y bloques flotantes. El terreno sube en escalones y el agua es amerizaje.
+  - **Fortaleza de lava**: castillo oscuro con torreón central, torreones de esquina, murallas almenadas y puerta con puente sobre un foso de lava, rodeado de ríos y lagos de lava. Caer a la lava es siniestro total.
 - En interior, sensores ToF, LiDAR 2D y flujo óptico.
 
 ![Escenarios disponibles](img/escenarios.png)
@@ -34,6 +37,10 @@ Simulador de drones que funciona en el navegador, sin instalar nada y sin conexi
 ![Muelle Uno de Málaga con La Farola al fondo](img/muelle-farola.png)
 
 ![Pasarela de madera del Guadalhorce](img/guadalhorce-pasarela.png)
+
+![Tierra de cubos](img/tierra-de-cubos.png)
+
+![Fortaleza de lava](img/fortaleza-de-lava.png)
 
 **Modo competición** (opcional, en cualquier escenario): recorrido de **1 a 20 aros** a distintas alturas, con cronómetro.
 - El siguiente aro se ilumina en **amarillo**, los pendientes son naranjas y los superados se ponen en **verde**. Cada aro lleva su número y un poste hasta el suelo para valorar la altura.

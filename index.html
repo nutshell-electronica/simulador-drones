@@ -1235,7 +1235,7 @@ F.stepRotor = function(dt,c,rho){
   if(p.y<=gh && this.status!=='ground'&&this.status!=='landed'){
     var vs=-v.y, tilt=Math.max(Math.abs(this.pitch),Math.abs(this.roll)), hs=this.hspeed();
     var lim=this.chuteOpen?9:(ac.kind==='heli'?4.5:5.5);
-    if(w.isWater && w.isWater(p.x,p.z)) this.crash('Amerizaje: el dron cae al agua.');
+    if(w.isWater && w.isWater(p.x,p.z)) this.crash(w.lava?'Siniestro total: el dron cae a la lava.':'Amerizaje: el dron cae al agua.');
     else if(vs>lim) this.crash('Impacto contra el suelo a '+vs.toFixed(1)+' m/s (máx. admisible '+lim.toFixed(1)+' m/s).');
     else if(tilt>35*deg && !this.chuteOpen) this.crash('Impacto con inclinación de '+(tilt/deg).toFixed(0)+'° (máx. 35°).');
     else if(hs>6 && !this.chuteOpen) this.crash('Impacto con velocidad horizontal de '+hs.toFixed(1)+' m/s (máx. 6 m/s).');
@@ -1352,7 +1352,7 @@ F.stepFixed = function(dt,c,rho){
   var gh=w.floorH(p.x,p.y,p.z)+0.02;
   if(p.y<=gh && this.status==='flying'){
     var vs=-v.y, bank=Math.abs(this.roll), pit=this.alpha+ga;
-    if(w.isWater && w.isWater(p.x,p.z)) this.crash('Amerizaje: el avión cae al agua.');
+    if(w.isWater && w.isWater(p.x,p.z)) this.crash(w.lava?'Siniestro total: el avión cae a la lava.':'Amerizaje: el avión cae al agua.');
     else if(vs>3.5) this.crash('Impacto con velocidad vertical de '+vs.toFixed(1)+' m/s (máx. 3,5 m/s para aterrizar).');
     else if(bank>20*deg) this.crash('Toma de tierra con alabeo de '+(bank/deg).toFixed(0)+'° (máx. 20°).');
     else if(Va>this.Vs*2.0) this.crash('Toma de tierra demasiado rápida: '+Va.toFixed(1)+' m/s (≈ '+(Va/this.Vs).toFixed(1)+' × Vs).');
@@ -1382,6 +1382,8 @@ SW.LIST = [
  {id:'barrio', name:'Barrio residencial (azotea)', tag:'Casas bajas · azotea', wx:'brisa', desc:'Despegas desde la azotea de un edificio de 21 m en un barrio de casas bajas (6–9 m) con algunos bloques de hasta 34 m, calles de 12 m, una plaza con gente y antenas en las azoteas. Sobrevuelo de zona urbana: normativa, personas, turbulencia entre edificios y aterrizaje sobre cualquier azotea.'},
  {id:'muelle', name:'Puerto de Málaga · Muelle Uno', tag:'Puerto · La Farola', wx:'brisa', lat:36.7121, lon:-4.4181, desc:'Despegas en el paseo del Muelle Uno con La Farola al fondo (NE). Pabellones, yates amarrados, un crucero, el Cubo del Pompidou, el Palmeral, el centro histórico con la Catedral y Gibralfaro detrás. Agua alrededor (amerizar = pérdida) y gente en el paseo. Maqueta reconocible, no plano exacto.'},
  {id:'guadalhorce', name:'Guadalhorce · Pasarela de madera', tag:'Humedal · Arraijanal', wx:'brisa', lat:36.6754, lon:-4.4617, desc:'Despegas sobre la pasarela de madera (≈270 m) del Paraje Natural Desembocadura del Guadalhorce: río, lagunas, carrizal, dunas y pinar del Arraijanal, el mar al sur, Guadalmar al este y la zona UAS del aeropuerto al oeste. Maqueta reconocible, no plano exacto.'},
+ {id:'bloques', name:'Tierra de cubos', tag:'Mundo de bloques', wx:'brisa', desc:'Mundo de bloques de 24 m: llanuras, colinas y montañas nevadas, ríos y un lago, bosque de árboles cuadrados, una aldea, una pirámide escalonada, pilares de piedra y bloques flotantes. Todo son aristas: el terreno sube en escalones y los obstáculos no se esquivan por el contorno. Agua = amerizaje.'},
+ {id:'fortaleza', name:'Fortaleza de lava', tag:'Castillo y lava', wx:'brisa', desc:'Castillo oscuro con torreón central, cuatro torreones de esquina, murallas almenadas y puerta con puente sobre un foso de lava, rodeado de ríos y lagos de lava y agujas de roca. Caer a la lava = siniestro total. Ideal para slalom entre torreones y para el modo competición.'},
  {id:'nave', name:'Nave industrial (interior)', tag:'Interior · LiDAR', wx:'calma', desc:'Nave de 60 × 53 × 14 m sin GNSS, con columnas, estanterías, palés y una viga. Equipa telémetros láser o un LiDAR 360° y observa las distancias a paredes y obstáculos.'},
  {id:'aeropuerto', name:'Cercanía de aeropuerto', tag:'Normativa', wx:'calma', desc:'Zona geográfica UAS restringida de 2 km de radio alrededor de la pista y tráfico tripulado cruzando. Practica el respeto del espacio aéreo.'}
 ];
@@ -1414,7 +1416,7 @@ SW.make = function(id, rngf){
   function rgb(h){ return [((h>>16)&255)/255,((h>>8)&255)/255,(h&255)/255]; }
   function initShapes(baseWater){ w.shapes=[]; w.shapeAt=function(x,z){ var L=w.shapes; for(var i=L.length-1;i>=0;i--){ var q=L[i], dx=x-q.x, dz=z-q.z, lx=q.cs*dx-q.sn*dz, lz=q.sn*dx+q.cs*dz;
       if(!q.ell){ if(Math.abs(lx)<=q.w/2&&Math.abs(lz)<=q.d/2) return q; } else { var u=lx/(q.w/2), v=lz/(q.d/2); if(u*u+v*v<=1) return q; } } return null; }; w.baseWater=baseWater; }
-  function shp(x,z,wd,dp,hex,opt){ var q={x:x,z:z,w:wd,d:dp,rot:(opt&&opt.rot)||0,hex:hex,c:rgb(hex),water:!!(opt&&opt.water),ell:!!(opt&&opt.ell)}; q.cs=Math.cos(q.rot); q.sn=Math.sin(q.rot); w.shapes.push(q); return q; }
+  function shp(x,z,wd,dp,hex,opt){ var q={x:x,z:z,w:wd,d:dp,rot:(opt&&opt.rot)||0,hex:hex,c:rgb(hex),water:!!(opt&&opt.water),ell:!!(opt&&opt.ell),glow:!!(opt&&opt.glow)}; q.cs=Math.cos(q.rot); q.sn=Math.sin(q.rot); w.shapes.push(q); return q; }
   function seg(x0,z0,x1,z1,wd,hex,opt){ var dx=x1-x0, dz=z1-z0, len=Math.hypot(dx,dz); var o=Object.assign({rot:Math.atan2(dx,dz)},opt||{}); return shp((x0+x1)/2,(z0+z1)/2,wd,len+2,hex,o); }
 
   if(id==='campo'){
@@ -1564,6 +1566,111 @@ SW.make = function(id, rngf){
     w.zones.push({type:'urban',x:1150,z:50,r:330,label:'Núcleo urbano de Guadalmar',color:0xe0a82e});
     w.zones.push({type:'restricted',x:-3300,z:-250,r:2000,label:'ZONA UAS · Aeropuerto de Málaga (aprox. didáctica)',color:0xd9342b,maxAlt:0});
     w.traffic={path:'x',z:-420,alt:110,speed:55,len:3200,label:'una aeronave tripulada'};
+  }
+  else if(id==='bloques'){
+    /* Tierra de cubos: mundo de bloques de 24 m, montañas, ríos y obstáculos cuadrados */
+    w.elev=40; w.rough=0.14; w.rfNoise=0; w.startHeading=0; w.mapExt=1300; w.mapZoom=520; w.ground='grass';
+    var CELL=24, NB=Math.round(2*SW.EXT/CELL), HB=new Float32Array(NB*NB), CB=new Uint32Array(NB*NB), WB=new Uint8Array(NB*NB);
+    var ci=function(v){ return Math.max(0,Math.min(NB-1,Math.floor((v+SW.EXT)/CELL))); };
+    var hs=function(i,j){ var s=Math.sin(i*127.1+j*311.7)*43758.5453; return s-Math.floor(s); };
+    var rivA=function(z){ return 340+130*Math.sin(z/280)+55*Math.sin(z/97); };
+    var rivB=function(x){ return 780+110*Math.sin(x/330)+40*Math.sin(x/120); };
+    var flats=[{x:-480,z:-330,rx:150,rz:140,h:16},{x:820,z:-330,rx:70,rz:70,h:16},{x:-40,z:60,rx:80,rz:80,h:8}];
+    var GR=[0x5fae3f,0x56a238,0x68b848,0x5aa63c];
+    for(var j=0;j<NB;j++) for(var i=0;i<NB;i++){
+      var x=-SW.EXT+(i+0.5)*CELL, z=-SW.EXT+(j+0.5)*CELL, k=j*NB+i, edge=Math.max(Math.abs(x),Math.abs(z));
+      var t=14+10*Math.sin(x/410)*Math.cos(z/360)+8*Math.sin(x/170+z/230)
+        +120*Math.exp(-(Math.pow(x+800,2)+Math.pow(z+1000,2))/(2*300*300))+90*Math.exp(-(Math.pow(x-1000,2)+Math.pow(z+700,2))/(2*260*260))
+        +70*Math.exp(-(Math.pow(x+1100,2)+Math.pow(z-500,2))/(2*250*250))+420*ss(1800,2900,edge)+(edge>1500?14*hs(i,j):6*hs(i,j));
+      var hh=Math.max(8,8*Math.round(t/8)), water=false, fl=null;
+      for(var f=0;f<flats.length;f++){ var q=flats[f]; if(Math.abs(x-q.x)<q.rx&&Math.abs(z-q.z)<q.rz) fl=q; }
+      if(fl){ hh=fl.h; }
+      else if(edge<2200){
+        var dA=Math.abs(x-rivA(z)), dB=Math.abs(z-rivB(x)), dL=Math.hypot(x+550,z-480);
+        if(dA<36||dB<30||dL<170) water=true;
+        else if(dA<96||dB<84||dL<230) hh=Math.min(hh,16);
+      }
+      var col, n4=hs(i+7,j+3);
+      if(water){ hh=0; col=n4<0.5?0x2f6fd0:0x3a7ad8; }
+      else if(hh>=200) col=n4<0.5?0xf4f6f8:0xe6eaee;
+      else if(hh>=128) col=n4<0.5?0x8a8d90:0x7a7d80;
+      else if(hh<=8&&(Math.abs(x-rivA(z))<150||Math.abs(z-rivB(x))<130||Math.hypot(x+550,z-480)<250)) col=n4<0.5?0xe0d08a:0xd6c680;
+      else if(n4>0.94) col=0x8a6a45;
+      else col=GR[Math.floor(n4*4)%4];
+      if(fl&&fl.h===16&&Math.abs(x-fl.x)<fl.rx-2) col=GR[Math.floor(n4*4)%4];
+      HB[k]=hh; CB[k]=col; WB[k]=water?1:0;
+    }
+    land=function(x,z){ return HB[ci(z)*NB+ci(x)]; };
+    pal=function(x,z,h){ return rgb(CB[ci(z)*NB+ci(x)]); };
+    w.isWater=function(x,z){ return WB[ci(z)*NB+ci(x)]===1; };
+    w.waterOnly=false;
+    w.voxel={cell:CELL,n:NB,H:HB,C:CB};
+    w.home={x:-40,z:60};
+    var snap=function(v){ return (Math.floor((v+SW.EXT)/CELL)+0.5)*CELL-SW.EXT; };
+    /* árboles de bloques */
+    for(var n=0;n<900&&w.obstacles.length<520;n++){
+      var tx=snap((rnd()-0.5)*3400), tz=snap((rnd()-0.5)*3400);
+      if(Math.hypot(tx+40,tz-60)<110||w.isWater(tx,tz)||land(tx,tz)>120) continue;
+      var th=8+Math.floor(rnd()*3)*3, lh=9+Math.floor(rnd()*2)*3;
+      add('box',tx,tz,4,4,th,'un tronco de bloques',0x6b4a2a);
+      add('box',tx,tz,12,12,lh,'un árbol de bloques',rnd()<0.2?0x4f9a2f:0x3f8f2f,{lift:th});
+    }
+    /* aldea */
+    for(var vi=0;vi<4;vi++) for(var vj=0;vj<3;vj++){ var hx=-560+vi*56, hz=-390+vj*66, hw=18+Math.floor(rnd()*2)*4, hhh=12+Math.floor(rnd()*2)*4;
+      add('box',hx,hz,hw,hw,hhh,'una casa de bloques',0xb98a56); add('box',hx,hz,hw+4,hw+4,4,'un tejado de bloques',0x8a3b2a,{lift:hhh}); }
+    add('box',-480,-250,18,18,52,'la torre de piedra',0x8a8d90); add('box',-480,-250,24,24,6,'las almenas',0x6e7174,{lift:52});
+    /* pirámide escalonada */
+    add('box',820,-330,60,60,16,'la pirámide de bloques',0xd9c27a); add('box',820,-330,40,40,16,'la pirámide de bloques',0xd9c27a,{lift:16}); add('box',820,-330,20,20,16,'la pirámide de bloques',0xd9c27a,{lift:32});
+    /* pilares de piedra y bloques flotantes */
+    for(var n=0;n<80&&w.obstacles.length<640;n++){ var px=snap((rnd()-0.5)*3000), pz=snap((rnd()-0.5)*3000);
+      if(Math.hypot(px+40,pz-60)<150||w.isWater(px,pz)||land(px,pz)>150) continue;
+      add('box',px,pz,8,8,30+Math.floor(rnd()*7)*10,'un pilar de piedra',0x8a8d90); }
+    for(var n=0;n<9;n++){ var fx=snap((rnd()-0.5)*1800), fz=snap((rnd()-0.5)*1800); if(Math.hypot(fx+40,fz-60)<200) continue;
+      add('box',fx,fz,24,24,24,'un bloque flotante',[0x6aa6e8,0xe8c04a,0xd0584a][n%3],{lift:60+Math.floor(rnd()*6)*10}); }
+  }
+  else if(id==='fortaleza'){
+    /* Fortaleza de lava: castillo oscuro con torreones, foso y ríos de lava */
+    w.elev=30; w.rough=0.2; w.rfNoise=0; w.startHeading=0; w.mapExt=1100; w.mapZoom=760; w.lava=true; w.ground='urban';
+    var CX=0, CZ=-250;
+    land=function(x,z){ var r=Math.hypot(x,z); return 300*ss(1700,2900,r)*(0.6+0.4*Math.sin(x/230)*Math.cos(z/190)); };
+    initShapes(false);
+    pal=function(x,z,h){ var s=w.shapeAt(x,z); if(s) return s.c; var n=0.5+0.5*Math.sin(x/41)*Math.cos(z/33); if(h>40) return [0.34+0.06*n,0.30+0.05*n,0.28+0.04*n]; return [0.26+0.05*n,0.23+0.04*n,0.23+0.04*n]; };
+    var LV=0xff5a14, HALO=0x6a2210, ROCK=0x77716c;
+    var rE=function(z){ return 800+150*Math.sin(z/300); }, rW=function(z){ return -820+120*Math.sin(z/260+1); };
+    var halos=[], lavas=[];
+    for(var zz=-1000;zz<1500;zz+=60){ halos.push([rE(zz),zz,rE(zz+60),zz+60,86]); lavas.push([rE(zz),zz,rE(zz+60),zz+60,64]); }
+    for(var zz=-1100;zz<1500;zz+=60){ halos.push([rW(zz),zz,rW(zz+60),zz+60,70]); lavas.push([rW(zz),zz,rW(zz+60),zz+60,48]); }
+    shp(0,-1250,1500,640,HALO,{ell:1}); shp(CX,CZ,780,780,HALO,{ell:1}); shp(880,700,560,420,HALO,{ell:1});
+    halos.forEach(function(a){ seg(a[0],a[1],a[2],a[3],a[4],HALO); });
+    shp(0,-1250,1300,500,LV,{ell:1,water:true,glow:true}); shp(CX,CZ,680,680,LV,{ell:1,water:true,glow:true}); shp(880,700,460,320,LV,{ell:1,water:true,glow:true});
+    lavas.forEach(function(a){ seg(a[0],a[1],a[2],a[3],a[4],LV,{water:true,glow:true}); });
+    shp(CX,CZ,560,560,0x4d494b,{ell:1});                /* isla del castillo */
+    shp(CX,CZ,400,400,0x403c3e);                         /* patio */
+    seg(0,100,0,-58,24,0x6e6a66);                        /* puente levadizo */
+    seg(0,-52,0,-170,16,0x56524f);                       /* camino al torreón */
+    shp(0,330,90,90,ROCK);                               /* zona de despegue */
+    w.isWater=function(x,z){ var s=w.shapeAt(x,z); return s?!!s.water:false; };
+    w.home={x:0,z:330};
+    var tower=function(x,z,r,hb,hc,col,label){ return add('cyl',x,z,r,0,hb+hc,label||'un torreón',col||0x2b2a30,{body:hb,cone:{h:hc,color:0x8a1d12}}); };
+    add('box',CX,CZ,56,56,96,'el torreón central',0x2b2a30,{body:60,cone:{h:36,color:0x8a1d12}});
+    [[-180,-430],[180,-430],[-180,-70],[180,-70]].forEach(function(p){ tower(p[0],p[1],19,72,32,0x2b2a30,'un torreón de la fortaleza'); });
+    add('box',CX,-430,360,8,36,'la muralla norte',0x35333a); add('box',CX-180,CZ,8,360,36,'la muralla oeste',0x35333a); add('box',CX+180,CZ,8,360,36,'la muralla este',0x35333a);
+    add('box',-99,-70,162,8,36,'la muralla sur',0x35333a); add('box',99,-70,162,8,36,'la muralla sur',0x35333a);
+    tower(-28,-70,11,48,22,0x2b2a30,'la torre de la puerta'); tower(28,-70,11,48,22,0x2b2a30,'la torre de la puerta');
+    add('box',0,-70,34,8,6,'el dintel de la puerta',0x35333a,{lift:42,roof:true});
+    [[-95,-300],[95,-300],[-95,-190],[95,-190]].forEach(function(p){ tower(p[0],p[1],9,40,20,0x35333a,'una torre del patio'); });
+    add('box',-90,-360,70,36,26,'el gran salón',0x3a373d); add('box',100,-370,44,40,32,'el arsenal',0x3a373d);
+    add('cyl',-70,-360,4,0,40,'una chimenea',0x2b2a30,{solid:true});
+    [[-75,170],[75,170]].forEach(function(p){ tower(p[0],p[1],9,46,22,0x2b2a30,'una atalaya'); });
+    for(var n=0;n<120&&w.obstacles.length<170;n++){ var sx=(rnd()-0.5)*3200, sz=(rnd()-0.5)*3200;
+      if(w.isWater(sx,sz)||Math.hypot(sx-CX,sz-CZ)<380||Math.hypot(sx,sz-330)<120||w.shapeAt(sx,sz)) continue;
+      if(rnd()<0.6) add('cyl',sx,sz,3+rnd()*3,0,20+rnd()*55,'una aguja de roca',0x3a3036,{solid:true}); else add('tree',sx,sz,2.4,0,9+rnd()*6,'un árbol calcinado',0x3b2f2a); }
+    w.decor=[];
+    var mer=function(x,z){ w.decor.push({x:x,y:38,z:z,sx:5,sy:4,sz:5,color:0x1f1e22}); };
+    for(var mx=-176;mx<=176;mx+=12){ mer(mx,-430); if(Math.abs(mx)>26) mer(mx,-70); }
+    for(var mz=-424;mz<=-76;mz+=12){ mer(-180,mz); mer(180,mz); }
+    [[0,-1],[0,1],[-1,0],[1,0]].forEach(function(d){ [-14,0,14].forEach(function(o){ w.decor.push({x:CX+d[0]*28.3+(d[0]?0:o),y:30,z:CZ+d[1]*28.3+(d[1]?0:o),sx:d[0]?0.6:4,sy:7,sz:d[1]?0.6:4,color:0xffa21f}); }); });
+    w.decor.push({x:0,y:30,z:-69.8,sx:14,sy:30,sz:0.5,color:0x2a1608});
   }
   else if(id==='bosque'){
     w.elev=400; w.rough=0.26;
@@ -2042,6 +2149,19 @@ R3D.loadWorld=function(w){
   S.rings=null; world=w; disposeGroup(S.worldGroup); dyn=[]; trailPts=[];
   var G=S.worldGroup, EXT=SW.EXT;
   /* terreno */
+  if(w.voxel){ var V=w.voxel, P=[],N3=[],C3=[],IX=[], rc=function(hx){ return [lin(((hx>>16)&255)/255),lin(((hx>>8)&255)/255),lin((hx&255)/255)]; };
+    function quad(a,b,c,d,nx,ny,nz,col){ var o=P.length/3; [a,b,c,d].forEach(function(v){ P.push(v[0],v[1],v[2]); N3.push(nx,ny,nz); C3.push(col[0],col[1],col[2]); }); IX.push(o,o+1,o+2,o,o+2,o+3); }
+    for(var vj=0;vj<V.n;vj++) for(var vi=0;vi<V.n;vi++){ var vk=vj*V.n+vi, vh=V.H[vk], col=rc(V.C[vk]), x0=-EXT+vi*V.cell, x1=x0+V.cell, z0=-EXT+vj*V.cell, z1=z0+V.cell;
+      quad([x0,vh,z0],[x0,vh,z1],[x1,vh,z1],[x1,vh,z0],0,1,0,col);
+      var nb=[[vi,vj-1,0,-1],[vi,vj+1,0,1],[vi-1,vj,-1,0],[vi+1,vj,1,0]];
+      nb.forEach(function(q){ var hn=(q[0]<0||q[1]<0||q[0]>=V.n||q[1]>=V.n)?-8:V.H[q[1]*V.n+q[0]]; if(hn>=vh) return;
+        if(q[3]===-1) quad([x0,hn,z0],[x0,vh,z0],[x1,vh,z0],[x1,hn,z0],0,0,-1,col);
+        else if(q[3]===1) quad([x1,hn,z1],[x1,vh,z1],[x0,vh,z1],[x0,hn,z1],0,0,1,col);
+        else if(q[2]===-1) quad([x0,hn,z1],[x0,vh,z1],[x0,vh,z0],[x0,hn,z0],-1,0,0,col);
+        else quad([x1,hn,z0],[x1,vh,z0],[x1,vh,z1],[x1,hn,z1],1,0,0,col); }); }
+    var vg=new THREE.BufferGeometry(); vg.setAttribute('position',new THREE.Float32BufferAttribute(P,3)); vg.setAttribute('normal',new THREE.Float32BufferAttribute(N3,3)); vg.setAttribute('color',new THREE.Float32BufferAttribute(C3,3)); vg.setIndex(IX);
+    var vm=new THREE.Mesh(vg,new THREE.MeshLambertMaterial({vertexColors:true})); vm.frustumCulled=false; G.add(vm);
+  } else {
   var flat=(w.id==='campo'||w.id==='aeropuerto'||w.id==='ciudad'||w.id==='barrio');
   var seg=flat?90:190;
   var geo=new THREE.PlaneGeometry(EXT*2,EXT*2,seg,seg); geo.rotateX(-Math.PI/2);
@@ -2052,9 +2172,10 @@ R3D.loadWorld=function(w){
   }
   geo.setAttribute('color',new THREE.BufferAttribute(col,3)); geo.computeVertexNormals();
   G.add(new THREE.Mesh(geo,new THREE.MeshLambertMaterial({vertexColors:true})));
+  }
   if(w.shapes){ w.shapes.forEach(function(q,i){
     var g=q.ell?new THREE.CircleGeometry(1,48):new THREE.PlaneGeometry(1,1); g.rotateX(-Math.PI/2);
-    var m=new THREE.Mesh(g,new THREE.MeshLambertMaterial({color:q.hex,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-2}));
+    var m=new THREE.Mesh(g,new (q.glow?THREE.MeshBasicMaterial:THREE.MeshLambertMaterial)({color:q.hex,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-2}));
     m.scale.set(q.ell?q.w/2:q.w,1,q.ell?q.d/2:q.d); m.rotation.y=q.rot; m.position.set(q.x,0.04+i*0.003,q.z); m.renderOrder=1+i; G.add(m); }); }
   if(w.sea){ var sg=new THREE.PlaneGeometry(EXT*2,EXT*2); sg.rotateX(-Math.PI/2);
     var sea=new THREE.Mesh(sg,new THREE.MeshLambertMaterial({color:0x2f7fa6,transparent:true,opacity:0.82})); sea.position.y=0.02; G.add(sea); }
@@ -2093,12 +2214,13 @@ R3D.loadWorld=function(w){
     im.instanceMatrix.needsUpdate=true; im.instanceColor.needsUpdate=true; G.add(im); return im;
   }
   var bg=new THREE.BoxGeometry(1,1,1);
-  inst(bg,boxes,new THREE.MeshLambertMaterial(),function(o,d,c){ d.position.set(o.x,o.y0+o.h/2,o.z); d.scale.set(o.dx,o.h,o.dz); d.rotation.set(0,0,0); c.setHex(o.color); });
-  inst(new THREE.CylinderGeometry(1,1,1,14),cyls,new THREE.MeshLambertMaterial(),function(o,d,c){ d.position.set(o.x,o.y0+o.h/2,o.z); d.scale.set(o.dx,o.h,o.dx); d.rotation.set(0,0,0); c.setHex(o.color); });
+  inst(bg,boxes,new THREE.MeshLambertMaterial(),function(o,d,c){ var bh=o.body||o.h; d.position.set(o.x,o.y0+bh/2,o.z); d.scale.set(o.dx,bh,o.dz); d.rotation.set(0,0,0); c.setHex(o.color); });
+  inst(new THREE.CylinderGeometry(1,1,1,14),cyls,new THREE.MeshLambertMaterial(),function(o,d,c){ var bh=o.body||o.h; d.position.set(o.x,o.y0+bh/2,o.z); d.scale.set(o.dx,bh,o.dx); d.rotation.set(0,0,0); c.setHex(o.color); });
   inst(new THREE.ConeGeometry(1,1,8),trees,new THREE.MeshLambertMaterial(),function(o,d,c){ d.position.set(o.x,o.y0+o.h*0.28+o.h*0.36,o.z); d.scale.set(o.dx*1.1,o.h*0.72,o.dx*1.1); d.rotation.set(0,0,0); c.setHex(o.color); });
   inst(new THREE.CylinderGeometry(1,1,1,6),trees,new THREE.MeshLambertMaterial(),function(o,d,c){ d.position.set(o.x,o.y0+o.h*0.14,o.z); d.scale.set(0.3,o.h*0.28,0.3); d.rotation.set(0,0,0); c.setHex(0x5b4330); });
   /* detalles: torres con bandas, aerogeneradores, buque */
   w.obstacles.forEach(function(o){
+    if(o.cone){ var cn=new THREE.Mesh(new THREE.ConeGeometry(1,1,o.kind==='box'?4:14),new THREE.MeshLambertMaterial({color:o.cone.color})); var cr=o.kind==='box'?o.dx*0.78:o.dx*1.25; cn.scale.set(cr,o.cone.h,cr); if(o.kind==='box') cn.rotation.y=Math.PI/4; cn.position.set(o.x,o.y0+o.body+o.cone.h/2,o.z); G.add(cn); }
     if(o.mast){ var band=new THREE.Mesh(new THREE.CylinderGeometry(o.dx*1.08,o.dx*1.08,o.h*0.12,10),new THREE.MeshLambertMaterial({color:0xf2f2f2})); band.position.set(o.x,o.y0+o.h*0.9,o.z); G.add(band); }
     if(o.turbine){ var gr=new THREE.Group(); gr.position.set(o.x,o.y0+o.h,o.z); var nac=new THREE.Mesh(new THREE.BoxGeometry(3,3,8),new THREE.MeshLambertMaterial({color:0xdfe4e8})); gr.add(nac);
       var rot=new THREE.Group(); rot.position.set(0,0,-4.5); for(var k=0;k<3;k++){ var bl=new THREE.Mesh(new THREE.BoxGeometry(1.2,38,0.4),new THREE.MeshLambertMaterial({color:0xf4f6f7})); bl.position.y=19; var pv=new THREE.Group(); pv.rotation.z=k*2.094; pv.add(bl); rot.add(pv);} gr.add(rot); gr.rotation.y=(w.wxDirRad||0); G.add(gr); dyn.push({rot:rot,turbine:true,grp:gr}); }
@@ -2533,7 +2655,7 @@ SIM.mapRaster=function(w,N,ext){
   w.zones.forEach(function(z){ g.strokeStyle='#d9342b'; g.fillStyle='rgba(217,52,43,0.12)'; g.lineWidth=1.5; g.beginPath(); g.arc(px(z.x),px(z.z),z.r/step,0,6.3); g.fill(); g.stroke(); });
   return {canvas:c,ext:ext,step:step};
 };
-var SCN_EXT={campo:700,ciudad:900,barrio:700,bosque:1300,montana:1600,costa:1300,nave:60,aeropuerto:3000,muelle:1100,guadalhorce:1100};
+var SCN_EXT={campo:700,ciudad:900,barrio:700,bosque:1300,montana:1600,costa:1300,nave:60,aeropuerto:3000,muelle:1100,guadalhorce:1100,bloques:1300,fortaleza:1100};
 SIM.SCN_EXT=SCN_EXT;
 
 /* ---------- construcción del hangar ---------- */
