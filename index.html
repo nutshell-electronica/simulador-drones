@@ -54,6 +54,7 @@ kbd{font-family:var(--mono);font-size:10.5px;border:1px solid var(--line2);borde
 .cell.g .v{color:var(--green)}
 .cell.wide{grid-column:span 2}
 @keyframes blink{50%{background:#f7bcbc}}
+#windInst{position:absolute;left:262px;top:100px;width:160px;height:200px;pointer-events:none;display:none}
 #chips{position:absolute;left:50%;top:10px;transform:translateX(-50%);display:flex;gap:6px;flex-wrap:wrap;justify-content:center;max-width:46%;pointer-events:none}#chips .cams{pointer-events:auto}
 .chip{background:rgba(251,252,253,.92);border:1px solid var(--ink);padding:2px 9px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;border-radius:2px;white-space:nowrap}
 .chip.cams{padding:1px 4px 1px 9px}.chip.cams button{font:inherit;letter-spacing:inherit;text-transform:inherit;margin-left:3px;padding:1px 6px;border:1px solid var(--ink);background:#fff;color:var(--ink);border-radius:2px;cursor:pointer}.chip.cams button.on{background:var(--ink);color:#fff}.chip.cams button:disabled{opacity:.4;cursor:not-allowed}
@@ -223,6 +224,7 @@ table.bud{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:
   <div id="glare"></div>
   <div id="vidlost">SIN SEÑAL DE VÍDEO</div>
   <div id="osd"></div>
+  <canvas id="windInst" width="320" height="400"></canvas>
   <div id="chips"></div>
   <div id="alerts"></div>
   <div id="compHud" class="panel"></div>
@@ -2400,29 +2402,6 @@ R3D.buildDrone=function(ac){
 R3D.project=function(v3){ var v=v3.clone().project(S.cam); var c=S.r.domElement; return {x:(v.x*0.5+0.5)*c.clientWidth,y:(-v.y*0.5+0.5)*c.clientHeight,z:v.z}; };
 R3D.dronePos=function(){ return drone?drone.root.position.clone():new THREE.Vector3(); };
 
-/* vectores de viento: rejilla fija en el mundo alrededor del dron (dirección = hacia dónde sopla, longitud = intensidad) */
-var WV=null, WVN=5, WVSP=60, WVLV=[8,30,65];
-function windVecUpdate(f,dt,on){
-  if(!WV){ if(!on) return;
-    var cnt=WVN*WVN*WVLV.length, mk=function(g){ var m=new THREE.InstancedMesh(g,new THREE.MeshBasicMaterial({color:0xffffff,fog:false,transparent:true,opacity:0.9}),cnt); m.frustumCulled=false; m.renderOrder=5; S.scene.add(m); return m; };
-    WV={sh:mk(new THREE.BoxGeometry(1,1,1)),hd:mk(new THREE.ConeGeometry(1,1,8)),d:new THREE.Object3D(),c:new THREE.Color(),t:0,cnt:cnt}; }
-  WV.sh.visible=WV.hd.visible=on; if(!on) return;
-  var wx=f.wx||{wind:0,turb:0,dir:0}, wd=f.wind, d=WV.d, c=WV.c; WV.t+=dt; var T=WV.t;
-  var dirTo=(wx.dir+180)*deg, gust=(wd&&wd.cur)?wd.cur.gust:0, ox=Math.round(f.pos.x/WVSP)*WVSP, oz=Math.round(f.pos.z/WVSP)*WVSP, h=(WVN-1)/2, k=0;
-  for(var ix=0;ix<WVN;ix++) for(var iz=0;iz<WVN;iz++) for(var il=0;il<WVLV.length;il++,k++){
-    var x=ox+(ix-h)*WVSP, z=oz+(iz-h)*WVSP, agl=WVLV[il], y=world.terrainH(x,z)+agl;
-    var near=1-clamp((Math.hypot(x-f.pos.x,z-f.pos.z)-110)/60,0,1);
-    var sp=(wd&&wd.mean?wd.mean(agl):wx.wind)+gust*0.8;
-    var ph=T*0.9+ix*1.7+iz*2.3+il*0.9, wob=Math.sin(ph)*wx.turb*0.45, spp=Math.max(0,sp*(1+Math.sin(ph*1.3)*wx.turb*0.25));
-    var L=clamp(spp*2.2,0,44)*near, a=dirTo+wob, dx=Math.sin(a), dz=-Math.cos(a);
-    if(L<0.8){ d.position.set(x,-999,z); d.scale.set(0.001,0.001,0.001); d.updateMatrix(); WV.sh.setMatrixAt(k,d.matrix); WV.hd.setMatrixAt(k,d.matrix); continue; }
-    var th=0.35+L*0.012, hl=Math.min(L*0.35,7);
-    d.rotation.order='YXZ'; d.rotation.set(0,-a,0); d.position.set(x+dx*(L-hl)/2,y,z+dz*(L-hl)/2); d.scale.set(th,th,L-hl); d.updateMatrix(); WV.sh.setMatrixAt(k,d.matrix);
-    d.rotation.set(-Math.PI/2,-a,0); d.position.set(x+dx*(L-hl/2),y,z+dz*(L-hl/2)); d.scale.set(th*3.2,hl,th*3.2); d.updateMatrix(); WV.hd.setMatrixAt(k,d.matrix);
-    var u=clamp(spp/14,0,1); c.setRGB(0.15+0.85*u,0.85-0.5*u,0.3-0.2*u); WV.sh.setColorAt(k,c); WV.hd.setColorAt(k,c);
-  }
-  WV.sh.instanceMatrix.needsUpdate=true; WV.hd.instanceMatrix.needsUpdate=true; if(WV.sh.instanceColor){ WV.sh.instanceColor.needsUpdate=true; WV.hd.instanceColor.needsUpdate=true; }
-}
 /* incendio al caer a la lava */
 var FIRE=null, FN=70;
 function fireUpdate(on,p,dt,size){
@@ -2445,7 +2424,6 @@ R3D.update=function(f,dt,opts){
   if(!drone||!world) return;
   var p=f.pos, ac=f.ac, T=f.t;
   drone.root.position.set(p.x,p.y+drone.dim*0.1,p.z);
-  windVecUpdate(f,dt,!!(opts&&opts.windVec)&&!world.indoor);
   fireUpdate(f.status==='crashed'&&!!world.lava&&/lava/.test(f.crashMsg||''),p,dt,drone.dim);
   drone.root.rotation.set(-f.pitch,-f.yaw,-f.roll,'YXZ');
   /* hélices */
@@ -2769,7 +2747,7 @@ function buildStatic(){
     sl.appendChild(r);
   });
   var info=document.createElement('div'); info.className='note'; info.id='wxInfo'; sl.appendChild(info);
-  var wvr=document.createElement('div'); wvr.className='wvrow'; wvr.style.margin='8px 0 0'; wvr.innerHTML='<label><input type="checkbox" id="oWindVec"> Ver el viento en el escenario</label><div class="note" style="margin:0">Flechas: hacia dónde sopla (longitud y color = intensidad; ráfagas y turbulencia las agitan).</div>'; sl.parentNode.appendChild(wvr);
+  var wvr=document.createElement('div'); wvr.className='wvrow'; wvr.style.margin='8px 0 0'; wvr.innerHTML='<label><input type="checkbox" id="oWindVec"> Instrumento de viento en pantalla</label><div class="note" style="margin:0">Indicador tipo aviónica: flecha de viento relativa al morro del dron, velocidad, ráfagas y componentes de cara y de costado.</div>'; sl.parentNode.appendChild(wvr);
   $('oWindVec').checked=ST.windVec!==false; $('oWindVec').onchange=function(){ ST.windVec=$('oWindVec').checked; SIM.save(); };
   /* escenarios */
   var sc=$('scnList'); sc.innerHTML='';
@@ -3686,7 +3664,40 @@ function hasCam(){ return F && (F.ac.has('camfpv')||F.ac.has('camhd')||F.ac.has(
 })();
 function setCam(m){ SIM.camMode=m; R3D.setCamMode(m); $('osd').style.display=(m==='fpv')?'block':'none'; if(m!=='fpv'){ $('noise').style.opacity=0; $('vidlost').style.display='none'; } R3D.setUptilt(F&&F.ac.frame.id==='quad-5'?32:12); }
 function nextCam(){ var i=cams.indexOf(SIM.camMode), n=i; do{ n=(n+1)%cams.length; }while(cams[n]==='fpv'&&!hasCam()); setCam(cams[n]); }
-function ropts(){ return {trail:ST.trail, zoom:zoomV, gimbal:F&&F.ac.has('camhd')&&!F.ac.has('camfpv'), windX:F?F.wcur.x:0, windZ:F?F.wcur.z:0, topH:90, windVec:ST.windVec!==false&&!!wxLive&&wxLive.wind>0.3}; }
+/* instrumento de viento tipo aviónica (rosa relativa al morro) */
+function drawWindInst(){
+  var cv=$('windInst'); if(!cv) return; var on=ST.windVec!==false&&F&&!hangarOpen&&!world.indoor&&wxLive&&wxLive.wind>0.05; cv.style.display=on?'block':'none'; if(!on) return;
+  var g=cv.getContext('2d'), W=cv.width, cx=W/2, cy=150, R=104, wc=F.wcur||{x:0,z:0,speed:0,gust:0,mean:0};
+  g.setTransform(1,0,0,1,0,0); g.clearRect(0,0,W,cv.height);
+  var kk=0.05; wsm.x+=(wc.x-wsm.x)*kk; wsm.z+=(wc.z-wsm.z)*kk; var sx=wsm.x, sz=wsm.z;
+  var sp=Math.hypot(sx,sz), to=Math.atan2(sx,-sz), yaw=F.yaw, rel=to-yaw;
+  var fx=Math.sin(yaw), fz=-Math.cos(yaw), head=-(sx*fx+sz*fz), cross=sx*Math.cos(yaw)+sz*Math.sin(yaw);
+  var u=Math.min(1,sp/14), col='rgb('+Math.round(40+215*u)+','+Math.round(220-110*u)+','+Math.round(90-50*u)+')';
+  g.fillStyle='rgba(8,18,30,0.72)'; g.strokeStyle='rgba(180,205,230,0.55)'; g.lineWidth=2; g.beginPath(); g.roundRect(4,4,W-8,cv.height-8,16); g.fill(); g.stroke();
+  g.fillStyle='#9fc3e6'; g.font='bold 20px sans-serif'; g.textAlign='center'; g.fillText('VIENTO',cx,32);
+  /* rosa con rumbo arriba */
+  g.save(); g.translate(cx,cy); g.rotate(-yaw);
+  g.strokeStyle='rgba(200,220,240,0.8)'; g.lineWidth=2; g.beginPath(); g.arc(0,0,R,0,6.2832); g.stroke();
+  for(var a=0;a<360;a+=10){ var r1=a%30===0?R-16:R-8; g.beginPath(); g.moveTo(Math.sin(a*deg0)*r1,-Math.cos(a*deg0)*r1); g.lineTo(Math.sin(a*deg0)*R,-Math.cos(a*deg0)*R); g.stroke(); }
+  g.font='bold 18px sans-serif'; g.textBaseline='middle'; [['N',0,'#ff6a5a'],['E',90,'#dbe9f7'],['S',180,'#dbe9f7'],['O',270,'#dbe9f7']].forEach(function(t){ g.save(); g.rotate(t[1]*deg0); g.translate(0,-R+30); g.rotate(-(t[1]*deg0)+yaw); g.fillStyle=t[2]; g.fillText(t[0],0,0); g.restore(); });
+  g.restore();
+  /* flecha de viento (hacia donde sopla), relativa al morro */
+  g.save(); g.translate(cx,cy); g.rotate(rel); var L=Math.min(R-30,22+sp*5.5);
+  g.fillStyle=col; g.strokeStyle='#08121e'; g.lineWidth=2; g.beginPath(); g.moveTo(0,-L); g.lineTo(15,-L+26); g.lineTo(5,-L+22); g.lineTo(5,L*0.55); g.lineTo(-5,L*0.55); g.lineTo(-5,-L+22); g.lineTo(-15,-L+26); g.closePath(); g.fill(); g.stroke(); g.restore();
+  /* dron (morro arriba) */
+  g.strokeStyle='#ffffff'; g.fillStyle='#ffffff'; g.lineWidth=3; g.beginPath(); g.moveTo(cx,cy-12); g.lineTo(cx+9,cy+9); g.lineTo(cx,cy+4); g.lineTo(cx-9,cy+9); g.closePath(); g.fill();
+  g.fillStyle='#ff6a5a'; g.beginPath(); g.moveTo(cx-9,cy-R-6); g.lineTo(cx+9,cy-R-6); g.lineTo(cx,cy-R+8); g.closePath(); g.fill();
+  /* datos */
+  var from=(Math.round((to/deg0+180+360)%360)||360);
+  g.textAlign='center'; g.textBaseline='alphabetic'; g.fillStyle=col; g.font='bold 34px monospace'; g.fillText(sp.toFixed(1),cx-18,282); g.font='bold 16px monospace'; g.fillStyle='#dbe9f7'; g.fillText('m/s',cx+54,282);
+  g.fillText('('+Math.round(sp*3.6)+' km/h)',cx,304);
+  g.font='bold 20px monospace'; g.fillStyle='#ffffff'; g.fillText('DE '+('00'+from).slice(-3)+'°',cx,332);
+  g.font='bold 16px monospace'; g.fillStyle=head>=0?'#9fe0a8':'#ffb36b'; g.textAlign='left'; g.fillText((head>=0?'▼ CARA ':'▲ COLA ')+Math.abs(head).toFixed(1),18,360);
+  g.fillStyle='#9fc3e6'; g.fillText((cross>=0?'◄ IZQ. ':'► DCHA. ')+Math.abs(cross).toFixed(1),18,384);
+  g.textAlign='right'; g.fillStyle=wc.gust>0.3?'#ffd75e':'#7d93aa'; g.fillText('R +'+(wc.gust||0).toFixed(1),W-18,360);
+}
+var deg0=Math.PI/180, wsm={x:0,z:0};
+function ropts(){ return {trail:ST.trail, zoom:zoomV, gimbal:F&&F.ac.has('camhd')&&!F.ac.has('camfpv'), windX:F?F.wcur.x:0, windZ:F?F.wcur.z:0, topH:90}; }
 
 function openHangar(){ hangarOpen=true; AUD.hush(); $('hangar').style.display='flex'; paused=true; syncPause(); SIM.validate(); $('bFly').textContent=(F&&sig===sigNow())?'Aplicar y continuar ▶':'Volar ▶'; }
 function closeHangar(){ hangarOpen=false; $('hangar').style.display='none'; }
@@ -3924,7 +3935,7 @@ function frame(ts){
   glareTick();
   { var hp0=F.world.home, ddx=F.pos.x-hp0.x, ddy=F.pos.y-(F.world.homeY+1.7), ddz=F.pos.z-hp0.z; AUD.update(F,{paused:paused,cam:SIM.camMode,dist:Math.sqrt(ddx*ddx+ddy*ddy+ddz*ddz),rain:wxLive?wxLive.rain:0}); }
   if(ts-lastHud>80){
-    lastHud=ts; compHud();
+    lastHud=ts; compHud(); drawWindInst();
     var d=H.data(F,world,wxLive);
     if(!paused||!F._hudDone){ H.updateCells(d,F); H.renderAlerts(H.alerts(d,F,world,wxLive)); H.compliance(d,F,world,wxLive); H.drawMap(F,world,d,wxLive); chips(d); } H.drawLidar(F,world); { var vh=viewHeading(); H.drawCompass(F,d,vh.hd,vh.top); }
     if(!paused) H.logTick(F,d); H.drawChart(); videoFx(d,ts); markOverlay(d);

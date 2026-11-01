@@ -17,13 +17,13 @@ Simulador de drones que funciona en el navegador, sin instalar nada y sin conexi
 - Física de empuje, batería, viento (rachas y turbulencia), densidad del aire y temperatura.
 - Modos GPS y ATTI, regreso a casa (RTH), pérdida de enlace, batería baja, fallo de motor, autorrotación y paracaídas.
 - Radio de mando y de vídeo con potencia, antena e interferencias; GNSS con número de satélites y precisión.
-- **Vectores de viento** en el escenario: flechas fijas en el mundo que indican hacia dónde sopla, con longitud y color según la intensidad y que se agitan con las ráfagas y la turbulencia (se pueden ocultar en Meteorología).
+- **Instrumento de viento** tipo aviónica en pantalla: flecha de viento relativa al morro del dron sobre una rosa de rumbos, velocidad (m/s y km/h), procedencia, componentes de cara/cola y de costado, y ráfagas (se puede ocultar en Meteorología).
 - Hora y lugar del vuelo: posición del Sol, brújula y deslumbramiento.
 - Aves, cometas y personas como obstáculos y riesgos.
 
 ![Vuelo sobre un barrio residencial, cámara de seguimiento](img/vuelo-barrio.png)
 
-![Vectores de viento sobre el escenario](img/viento-vectores.png)
+![Instrumento de viento en pantalla](img/viento-instrumento.png)
 
 **Escenarios**
 - Campo, ciudad, bosque, montaña, costa, aeropuerto, nave industrial (interior, sin GNSS) y barrio residencial con despegue desde una azotea.
