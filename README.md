@@ -90,6 +90,7 @@ Simulador de drones que funciona en el navegador, sin instalar nada y sin conexi
 - Pausa, avance paso a paso e inspector de valores.
 - Parámetros de ArduPilot: se puede cargar un archivo `.param` y el simulador aplica los que tienen efecto (de forma aproximada, no es un SITL).
 - Sonido sintetizado de motores, viento, lluvia, avisos y aros; se silencia al salir al hangar.
+- **Idioma español / inglés**: selector con banderas (ES · EN) en la esquina superior derecha. Traduce toda la interfaz, los avisos, los textos de los gráficos y el `.param` descargable; se recuerda la elección y, la primera vez, se elige según el idioma del navegador.
 
 ## Cómo se controla
 

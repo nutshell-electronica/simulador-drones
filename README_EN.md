@@ -92,6 +92,7 @@ A drone simulator that runs in the browser, with nothing to install and no inter
 - Pause, single-step and a value inspector.
 - ArduPilot parameters: load a `.param` file and the simulator applies those that have an effect (approximately; it is not an SITL).
 - Synthesised sound for motors, wind, rain, warnings and rings; muted when returning to the hangar.
+- **Spanish / English interface**: flag selector (ES · EN) in the top-right corner. It translates the whole interface, the warnings, the text drawn on the charts and the downloadable `.param`; your choice is remembered and, the first time, it follows the browser language.
 
 ## Controls
 
