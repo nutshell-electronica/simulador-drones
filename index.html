@@ -285,7 +285,7 @@ table.bud{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:
           </div>
           <div>
             <div class="card" id="commCard" style="display:none"><h3>Ficha del fabricante</h3><div class="bd" id="commBody"></div></div>
-            <div class="card"><h3>Prestaciones calculadas (atmósfera estándar)</h3><div class="bd"><div class="stats" id="stats"></div><ul class="val-list" id="valList"></ul></div></div>
+            <div class="card"><h3>Prestaciones calculadas (atmósfera estándar)</h3><div class="bd"><div class="stats" id="stats"></div><ul class="val-list" id="valList"></ul><div id="tsHint" style="display:none"></div></div></div>
           </div>
         </div>
       </div>
@@ -397,8 +397,28 @@ SD.TYPES = [
   {id:'heli',  name:'Helicóptero RC (1 rotor + cola)', kind:'heli', rotors:1},
   {id:'fw-trainer', name:'Ala fija · entrenador', kind:'fixed', rotors:1},
   {id:'fw-wing',    name:'Ala fija · ala volante', kind:'fixed', rotors:1},
-  {id:'fw-long',    name:'Ala fija · largo alcance', kind:'fixed', rotors:1}
+  {id:'fw-long',    name:'Ala fija · largo alcance', kind:'fixed', rotors:1},
+  /* VTOL tail-sitter (ArduPilot Plane con Q_TAILSIT_ENABLE): despega y aterriza vertical sobre la cola */
+  {id:'ts-single',   name:'Tail-sitter · monomotor 3D (ala + superficies)',   kind:'tailsitter', rotors:1},
+  {id:'ts-twin',     name:'Tail-sitter · bimotor (ala volante con elevones)', kind:'tailsitter', rotors:2},
+  {id:'ts-twinvec',  name:'Tail-sitter · bimotor vectorial (motores orientables)', kind:'tailsitter', rotors:2},
+  {id:'ts-tri',      name:'Tail-sitter · tres motores con superficies',       kind:'tailsitter', rotors:3},
+  {id:'ts-quadsurf', name:'Tail-sitter · cuatro motores con superficies',     kind:'tailsitter', rotors:4},
+  {id:'ts-quadpure', name:'Tail-sitter · cuatro motores sin superficies',     kind:'tailsitter', rotors:4}
 ];
+
+/* Variantes tail-sitter de ArduPilot: enable = Q_TAILSIT_ENABLE, cls = Q_FRAME_CLASS, typ = Q_FRAME_TYPE,
+   motmx = Q_TAILSIT_MOTMX (máscara de motores que siguen en vuelo adelante), fw = nº de motores activos en vuelo adelante,
+   surf = lleva superficies de control, vec = empuje vectorial (servos de inclinación), diff = guiñada por empuje diferencial */
+SD.TS = {
+  'ts-single':  {enable:1, cls:10, clsName:'Single/Dual', typ:0, motmx:0, fw:1, surf:true,  vec:false, diff:false, outputs:'Throttle + elevones/ailerones + timón', label:'Monomotor 3D'},
+  'ts-twin':    {enable:1, cls:10, clsName:'Single/Dual', typ:0, motmx:0, fw:2, surf:true,  vec:false, diff:true,  outputs:'Throttle Left + Throttle Right + elevones', label:'Bimotor'},
+  'ts-twinvec': {enable:1, cls:10, clsName:'Single/Dual', typ:0, motmx:0, fw:2, surf:true,  vec:true,  diff:true,  outputs:'Throttle Left/Right + Tilt Left/Right + elevones', label:'Bimotor vectorial'},
+  'ts-tri':     {enable:1, cls:7,  clsName:'Tri',         typ:1, motmx:3, fw:2, surf:true,  vec:false, diff:false, outputs:'Motor 1–3 + elevones', label:'Tricóptero tail-sitter'},
+  'ts-quadsurf':{enable:1, cls:1,  clsName:'Quad',        typ:1, motmx:3, fw:2, surf:true,  vec:false, diff:false, outputs:'Motor 1–4 + elevones', label:'Copter con superficies'},
+  'ts-quadpure':{enable:2, cls:1,  clsName:'Quad',        typ:17,motmx:0, fw:4, surf:false, vec:false, diff:false, outputs:'Motor 1–4 (sin superficies; control como copter en todos los modos)', label:'Copter sin superficies'}
+};
+SD.PROPS_TS = ['7x5','8x6','9x6','9x7','10x7','11x7','12x8'];
 
 /* Bastidores: m = masa de estructura+controladora (kg), dim = diagonal/envergadura (m),
    maxProp (pulgadas), maxPay (kg), cdA = área de arrastre frontal (m2), maxWind (m/s) */
@@ -417,6 +437,14 @@ SD.FRAMES = [
   /* ala fija: S = superficie alar (m2), b = envergadura (m) */
   {id:'fwt-14', type:'fw-trainer', name:'Envergadura 1,4 m', m:0.65, dim:1.4, b:1.4, S:0.30, CL0:0.35, CLa:4.6, CD0:0.032, e:0.80, aMax:14, maxProp:12, maxPay:0.8, cdA:0.0, maxWind:9, vne:30},
   {id:'fww-10', type:'fw-wing', name:'Envergadura 1,0 m', m:0.42, dim:1.0, b:1.0, S:0.20, CL0:0.20, CLa:4.0, CD0:0.020, e:0.82, aMax:13, maxProp:10, maxPay:0.5, cdA:0.0, maxWind:10, vne:45},
+  /* tail-sitter: aerodinámica como ala fija + datos de multirrotor (tilt, yawRate); cdA = resistencia de la ala vista de canto al viento horizontal en estacionario */
+  {id:'tss-12', type:'ts-single',   name:'Envergadura 1,2 m', m:0.60, dim:1.2, b:1.2, S:0.26, CL0:0.20, CLa:4.0, CD0:0.024, e:0.80, aMax:13, maxProp:12, maxPay:0.6, cdA:0.20, maxWind:9, vne:40, tilt:35, yawRate:90},
+  {id:'tst-12', type:'ts-twin',     name:'Envergadura 1,2 m', m:0.62, dim:1.2, b:1.2, S:0.24, CL0:0.20, CLa:4.0, CD0:0.022, e:0.80, aMax:13, maxProp:10, maxPay:0.6, cdA:0.19, maxWind:9, vne:40, tilt:35, yawRate:90},
+  {id:'tst-16', type:'ts-twin',     name:'Envergadura 1,6 m', m:1.20, dim:1.6, b:1.6, S:0.40, CL0:0.22, CLa:4.2, CD0:0.022, e:0.84, aMax:13, maxProp:12, maxPay:1.2, cdA:0.30, maxWind:10, vne:45, tilt:32, yawRate:80},
+  {id:'tsv-14', type:'ts-twinvec',  name:'Envergadura 1,4 m', m:0.85, dim:1.4, b:1.4, S:0.30, CL0:0.22, CLa:4.2, CD0:0.022, e:0.82, aMax:13, maxProp:11, maxPay:0.8, cdA:0.22, maxWind:11, vne:42, tilt:40, yawRate:110},
+  {id:'tsr-14', type:'ts-tri',      name:'Envergadura 1,4 m', m:0.90, dim:1.4, b:1.4, S:0.30, CL0:0.20, CLa:4.0, CD0:0.024, e:0.80, aMax:13, maxProp:10, maxPay:0.8, cdA:0.22, maxWind:9, vne:40, tilt:35, yawRate:100},
+  {id:'tsq-14', type:'ts-quadsurf', name:'Envergadura 1,4 m', m:1.10, dim:1.4, b:1.4, S:0.32, CL0:0.20, CLa:4.0, CD0:0.026, e:0.80, aMax:13, maxProp:10, maxPay:1.0, cdA:0.24, maxWind:10, vne:38, tilt:38, yawRate:100},
+  {id:'tsp-10', type:'ts-quadpure', name:'Envergadura 1,0 m', m:0.80, dim:1.0, b:1.0, S:0.20, CL0:0.18, CLa:3.8, CD0:0.026, e:0.78, aMax:13, maxProp:8,  maxPay:0.5, cdA:0.17, maxWind:10, vne:36, tilt:40, yawRate:140},
   {id:'fwl-22', type:'fw-long', name:'Envergadura 2,2 m', m:1.30, dim:2.2, b:2.2, S:0.52, CL0:0.40, CLa:5.0, CD0:0.022, e:0.88, aMax:13, maxProp:14, maxPay:1.5, cdA:0.0, maxWind:9, vne:35}
 ];
 
@@ -478,6 +506,12 @@ SD.STD = {
   'heli':  {frame:'heli-450', motor:'mh450', prop:'',       esc:80, chem:'lipo25', cells:6, cap:3000, acc:['camfpv','rid'], pay:0},
   'fw-trainer': {frame:'fwt-14', motor:'m2820', prop:'10x6', esc:40, chem:'lipo25', cells:3, cap:3000, acc:['camfpv','rid'], pay:0},
   'fw-wing':    {frame:'fww-10', motor:'m2208', prop:'8x6',  esc:30, chem:'lipo25', cells:3, cap:2200, acc:['camfpv','rid'], pay:0},
+  'ts-single':  {frame:'tss-12', motor:'m2814', prop:'11x7', esc:60, chem:'lipo25', cells:6, cap:3000, acc:['camfpv','rid'], pay:0},
+  'ts-twin':    {frame:'tst-12', motor:'m2820', prop:'9x6',  esc:40, chem:'lipo25', cells:4, cap:3000, acc:['camfpv','rid'], pay:0},
+  'ts-twinvec': {frame:'tsv-14', motor:'m3536', prop:'9x6',  esc:40, chem:'lipo25', cells:6, cap:5200, acc:['camfpv','rid'], pay:0},
+  'ts-tri':     {frame:'tsr-14', motor:'m2820', prop:'10x7', esc:30, chem:'lipo25', cells:3, cap:5200, acc:['camfpv','rid'], pay:0},
+  'ts-quadsurf':{frame:'tsq-14', motor:'m2212', prop:'9x7',  esc:60, chem:'lipo25', cells:4, cap:3000, acc:['camfpv','rid'], pay:0},
+  'ts-quadpure':{frame:'tsp-10', motor:'m2820', prop:'8x6',  esc:40, chem:'lipo25', cells:4, cap:3000, acc:['camfpv','rid'], pay:0},
   'fw-long':    {frame:'fwl-22', motor:'m3536', prop:'11x7', esc:40, chem:'liion',  cells:4, cap:10000, acc:['camfpv','camhd','rid'], pay:0}
 };
 
@@ -564,10 +598,12 @@ SM.build = function(cfg){
   (cfg.acc||[]).forEach(function(id){ var a=D_.byId(D_.ACC,id); if(a){ac.accs.push(a); if(cm&&cm.builtin.indexOf(id)>=0) return; ac.accMass+=a.m; ac.accW+=a.w; ac.accCd+=a.cdA;} });
   ac.has = function(id){ return (cfg.acc||[]).indexOf(id)>=0; };
   ac.payMass = (cfg.pay||0)/1000;
-  ac.avW = 3 + (ac.kind==='multi'?0.5*ac.rotors:1);        /* aviónica y controladora */
+  ac.avW = 3 + ((ac.kind==='multi'||ac.kind==='tailsitter')?0.5*ac.rotors:1);        /* aviónica y controladora */
   var nm = (ac.kind==='heli'?1:ac.rotors);
   ac.nMotors = nm;
-  ac.mass = fr.m + nm*(mo.m + ac.propMass + (ac.kind==='heli'?0:ac.escMass)) + (ac.kind==='heli'?ac.escMass:0)
+  ac.ts = ac.kind==='tailsitter'?D_.TS[type.id]:null; ac.nFw = ac.ts?ac.ts.fw:1;
+  ac.tsMass = ac.ts?((ac.ts.surf?0.04:0)+(ac.ts.vec?0.06:0)):0;
+  ac.mass = fr.m + ac.tsMass + nm*(mo.m + ac.propMass + (ac.kind==='heli'?0:ac.escMass)) + (ac.kind==='heli'?ac.escMass:0)
           + ac.battMass + ac.accMass + ac.payMass;
   if(cm) ac.mass = cm.mass + ac.accMass + ac.payMass;
   ac.pK = cm?cm.pK:1; ac.spec = cm?cm.spec:null; if(cm) ac.avW = cm.avW;
@@ -631,7 +667,7 @@ SM.validate = function(cfg){
   var heliMotor = mo.id.indexOf('mh')===0;
   if(ac.kind==='heli' && !heliMotor) E.push('El motor «'+mo.name+'» no sirve para helicóptero: no tiene par ni reductora para mover un rotor principal.');
   if(ac.kind!=='heli' && heliMotor) E.push('El motor «'+mo.name+'» es de helicóptero (con reductora): no es válido para hélices directas.');
-  if(ac.kind!=='fixed' && /ala fija/.test(mo.name)) W.push('El motor «'+mo.name+'» está pensado para ala fija; en un multirrotor funcionará con poco rendimiento.');
+  if(ac.kind!=='fixed' && ac.kind!=='tailsitter' && /ala fija/.test(mo.name)) W.push('El motor «'+mo.name+'» está pensado para ala fija; en un multirrotor funcionará con poco rendimiento.');
   if(Im>cfg.esc) E.push('Corriente máxima por motor '+Im.toFixed(1)+' A > ESC de '+cfg.esc+' A: el ESC se quemaría a plena potencia.');
   else if(Im>0.85*cfg.esc) W.push('El ESC ('+cfg.esc+' A) trabaja al '+Math.round(100*Im/cfg.esc)+' % a plena potencia: sin margen térmico.');
   if(Im>1.3*mo.imax) E.push('El motor pide '+Im.toFixed(1)+' A (máx. continuo '+mo.imax+' A): se sobrecalentaría y desmagnetizaría. Usa una hélice menor o menos celdas.');
@@ -644,26 +680,28 @@ SM.validate = function(cfg){
     if(ac.Din>fr.maxProp+0.01) E.push('Hélice de '+ac.Din+'" no cabe en el bastidor (máx. '+fr.maxProp+'").');
     if(ac.Din<fr.maxProp*0.45 && ac.kind==='multi') W.push('Hélice muy pequeña para este bastidor ('+ac.Din+'" frente a '+fr.maxProp+'" máx.): poco empuje y mucho consumo.');
   }
-  if(ac.kind==='multi'||ac.kind==='heli'){
+  if(ac.kind==='multi'||ac.kind==='heli'||ac.kind==='tailsitter'){
     if(I.twr<1.25) E.push('Empuje máximo '+Ttot.toFixed(1)+' N = '+I.twr.toFixed(2)+' × el peso ('+ac.W.toFixed(1)+' N): no hay margen para despegar. Mínimo recomendado 1,5 (2 para volar con viento).');
     else if(I.twr<2) W.push('Relación empuje/peso '+I.twr.toFixed(2)+': poco margen; con viento o carga extra perderás control de altura.');
     if(ac.kind==='multi' && ac.rotors>=6 && I.twr<ac.rotors/(ac.rotors-1)*1.1) W.push('Con '+ac.rotors+' rotores la redundancia ante fallo de motor exige TWR > '+(ac.rotors/(ac.rotors-1)*1.1).toFixed(2)+'.');
-  } else {
-    /* ala fija */
+  }
+  if(ac.kind==='fixed'||ac.kind==='tailsitter'){
+    /* ala fija / vuelo adelante del tail-sitter */
     var S=fr.S, q=ac.mass, CLmax = fr.CL0+fr.CLa*fr.aMax*D_.deg;
     var Vs = Math.sqrt(2*ac.W/(rho*S*CLmax)); I.Vs=Vs; I.CLmax=CLmax; I.wingLoad=ac.mass/S;
     if(Vs>20) E.push('Velocidad de pérdida '+Vs.toFixed(1)+' m/s (carga alar '+(ac.mass/S).toFixed(1)+' kg/m²): demasiado alta para despegar y aterrizar con seguridad.');
     else if(Vs>14) W.push('Velocidad de pérdida alta ('+Vs.toFixed(1)+' m/s): aterrizajes rápidos y exigentes.');
-    var T0 = Tm;
-    if(T0<0.28*ac.W) E.push('Empuje estático '+T0.toFixed(1)+' N < 0,28 × peso ('+ (0.28*ac.W).toFixed(1)+' N): no acelera lo suficiente para alcanzar la velocidad de despegue.');
+    var T0 = Tm*(ac.nFw||1), ts_=ac.kind==='tailsitter';
+    if(!ts_ && T0<0.28*ac.W) E.push('Empuje estático '+T0.toFixed(1)+' N < 0,28 × peso ('+ (0.28*ac.W).toFixed(1)+' N): no acelera lo suficiente para alcanzar la velocidad de despegue.');
     var Vc = 1.4*Vs, AR=fr.b*fr.b/S, CLc = 2*ac.W/(rho*Vc*Vc*S);
     var Dc = 0.5*rho*Vc*Vc*S*(fr.CD0+CLc*CLc/(Math.PI*fr.e*AR));
     var nmax=SM.maxN(ac,V), Vp=0.0254*ac.P*nmax*0.85, Tc = T0*Math.max(0,1-Vc/Vp);
     I.cruiseV = Vc; I.dragC = Dc; I.thrC = Tc; I.LD = ac.W/Dc;
     if(Tc<1.15*Dc) E.push('A '+Vc.toFixed(0)+' m/s el empuje disponible ('+Tc.toFixed(1)+' N) no supera la resistencia aerodinámica ('+Dc.toFixed(1)+' N): no puede mantener vuelo nivelado. Pasa a una hélice de más paso o más celdas.');
     if(Vp<1.35*Vs) E.push('La hélice de paso '+ac.P+'" sólo da '+Vp.toFixed(0)+' m/s de velocidad máxima de empuje, por debajo de 1,35 × Vs: nunca despegaría.');
-    I.twr = T0/ac.W;
-    I.cruiseW = Dc*Vc/(0.6*ac.effM*ac.effE)+pa; I.cruiseMin = ac.battWh*0.8/I.cruiseW*60; I.hoverMin=I.cruiseMin; I.hoverW=I.cruiseW;
+    I.cruiseW = Dc*Vc/(0.6*ac.effM*ac.effE)+pa; I.cruiseMin = ac.battWh*0.8/I.cruiseW*60;
+    if(!ts_){ I.twr = T0/ac.W; I.hoverMin=I.cruiseMin; I.hoverW=I.cruiseW; }
+    else { if(Vc>25) W.push('Velocidad de crucero ≈ '+Vc.toFixed(0)+' m/s: la hélice de paso corto limita el vuelo adelante.'); if(ac.ts.fw<ac.nMotors && ac.ts.enable===1) W.push('En vuelo adelante sólo '+ac.ts.fw+' de '+ac.nMotors+' motores empujan (Q_TAILSIT_MOTMX = '+ac.ts.motmx+'); los demás se paran.'); }
   }
   if(I.hoverMin<3 && ac.kind!=='fixed') W.push('Autonomía en estacionario ≈ '+I.hoverMin.toFixed(1)+' min: batería muy pequeña para este peso.');
   if(ac.has('camfpv')===false && ac.has('camhd')===false && ac.has('camir')===false) W.push('Sin cámara: no tendrá modo FPV (sólo vuelo a la vista).');
@@ -989,6 +1027,7 @@ F.reset = function(){
   this.wind = new SM.Wind(this.wx,this.world,this.st.seed||11);
   this.motorOut=-1; this.mapPts=[]; this.mapSet={}; this.lidar=null; this.holdSrc='GNSS';
   if(this.ac.kind==='fixed'){ this.Va=0; this.pitch=0; }
+  if(this.ac.kind==='tailsitter'){ this.tsInit(); }
   this.updateSensors();
 };
 
@@ -1113,7 +1152,7 @@ F.step = function(dt,cmd){
   var c=cmd;
   if(this.sens.ctrl.margin<0 && this.status!=='ground') c={pitch:0,roll:0,yaw:0,thr:(ac.kind==='fixed'?0:0)};   /* sin enlace: no hay mandos */
   this.cmd=c;
-  if(ac.kind==='fixed') this.stepFixed(dt,c,rho); else this.stepRotor(dt,c,rho);
+  if(ac.kind==='fixed') this.stepFixed(dt,c,rho); else if(ac.kind==='tailsitter') this.stepTail(dt,c,rho); else this.stepRotor(dt,c,rho);
   /* colisiones con el entorno */
   if(this.status!=='crashed'){
     var hit=w.collide(p.x,p.y,p.z,Math.max(0.1,ac.frame.dim*0.35));
@@ -1290,7 +1329,7 @@ F.stepFixed = function(dt,c,rho){
   }
   var nmax=SM.maxN(ac,this.V), n=u*nmax;
   var Vp=0.0254*ac.P*n*0.85;
-  var T0=ac.ct*rho*n*n*Math.pow(ac.D,4);
+  var T0=ac.ct*rho*n*n*Math.pow(ac.D,4)*(ac.nFw||1);
   var Tthr=T0*Math.max(0,1-Math.max(Va,0)/Math.max(Vp,0.1));
   var q=0.5*rho*Math.max(Va,0.01)*Math.max(Va,0.01);
   if(onG){
@@ -1345,7 +1384,7 @@ F.stepFixed = function(dt,c,rho){
   p.x+=v.x*dt; p.y+=v.y*dt; p.z+=v.z*dt;
   this.accel={x:0,y:0,z:0}; this.gload=(L/(m*G))||1;
   /* potencia */
-  var Pm=ac.cp*rho*n*n*n*Math.pow(ac.D,5)*(1-0.3*Math.min(1,Va/Math.max(Vp,1)))*(ac.pK||1);
+  var Pm=ac.cp*rho*n*n*n*Math.pow(ac.D,5)*(1-0.3*Math.min(1,Va/Math.max(Vp,1)))*(ac.pK||1)*(ac.nFw||1);
   if(cutM) Pm=0;
   this.P=Pm/(ac.effM*ac.effE)+ac.accW+ac.avW; this.rpm=n*60; this.nmax=nmax;
   this.Tcur=Tthr; this.thrPct=u*100; this.Tmax=T0; this.TWR=Tm1/W;
@@ -1367,6 +1406,111 @@ F.toggleFail = function(){ if(this.status==='flying'){ this.fail=!this.fail; } }
 F.deployChute = function(){ if(this.ac.has('chute') && !this.chuteOpen && this.chute<=0 && this.status==='flying'){ this.chute=1.2; } };
 F.toggleMode = function(){ this.mode=this.mode==='GPS'?'ATTI':'GPS'; };
 })();
+
+/* ===== MODELO: tail-sitter VTOL (ArduPilot Plane · Q_TAILSIT_ENABLE) =====
+   Cuatro fases: VTOL (despegue/aterrizaje sobre la cola, control tipo multirrotor), transición a vuelo adelante,
+   vuelo adelante (ala fija: reutiliza stepFixed) y transición a VTOL.
+   tsAng = ángulo del eje del morro respecto a la vertical (0 = estacionario, 90° = vuelo horizontal). */
+(function(){
+var D_ = (typeof SD!=='undefined'?SD:require('./20_data.js'));
+var deg = D_.deg, clamp = D_.clamp, G = D_.G;
+var F = SM.Flight.prototype;
+
+SM.fwNow = function(f){ return f.ac.kind==='fixed' || (f.ac.kind==='tailsitter' && f.tsMode==='fw'); };
+SM.tsDefaults = {angle:45, ratFw:50, ratVt:50, angVt:0, minAlt:15, input:0};
+
+F.tsInit = function(){ this.tsMode='vtol'; this.tsAng=0; this.tsReq='vtol'; this.tsFw=false; this.tsMsg=''; this.tsT=0; this.tsAuto=false; };
+
+F.toggleVtol = function(){
+  if(this.ac.kind!=='tailsitter') return;
+  if(this.status!=='flying'){ this.tsMsg='Despega primero: la transición sólo se hace en vuelo.'; this.tsMsgT=this.t; return; }
+  if(this.tsMode==='toFw'||this.tsMode==='toVt') return;
+  this.tsReq=(this.tsMode==='vtol')?'fw':'vtol'; this.tsAuto=false;
+};
+
+function ctsA(fr,k,al){          /* CL y CD hasta ±180°: lineal + pérdida, mezcla con placa plana */
+  var aS=fr.aMax*deg, CLm=fr.CL0+fr.CLa*aS, a=Math.abs(al), CLl=clamp(fr.CL0+fr.CLa*al,-CLm,CLm);
+  var t=clamp((a-aS)/(12*deg),0,1), wgt=t*t*(3-2*t), sn=Math.sin(al);
+  var CLf=1.15*Math.sin(2*al), CDf=0.06+1.25*sn*sn, CDl=fr.CD0+k*CLl*CLl;
+  return {CL:(1-wgt)*CLl+wgt*CLf, CD:(1-wgt)*CDl+wgt*CDf};
+}
+
+F.stepTail = function(dt,c,rho){
+  var ap=this.st.ap||{}, D=SM.tsDefaults, flying=this.status==='flying', agl=this.agl();
+  if(this.tsMode==='fw'){
+    if(this.landNow && this.tsReq!=='vtol'){ this.tsReq='vtol'; this.tsAuto=true; }
+    if(this.rth && this.hdist()<(ap.tsRtlDist||90) && this.tsReq!=='vtol'){ this.tsReq='vtol'; this.tsAuto=true; this.rthPhase='cruise'; }
+  } else if(this.tsMode==='vtol' && (this.landNow||this.rth) && this.tsReq==='fw'){ this.tsReq='vtol'; }
+  if(this.tsMode==='vtol'){
+    if(this.tsReq==='fw' && flying){
+      var minAlt=ap.tsMinAlt||D.minAlt;
+      if(agl<minAlt){ this.tsReq='vtol'; this.tsMsg='Altura insuficiente para la transición ('+agl.toFixed(0)+' m < '+minAlt+' m).'; this.tsMsgT=this.t; }
+      else { this.tsMode='toFw'; this.tsT=0; this.tsAng=Math.max(0,this.pitch); this.tsMsg='Transición a vuelo adelante…'; this.tsMsgT=this.t; return this.stepTrans(dt,rho); }
+    }
+    var c2=c; if((ap.tsInput!==undefined?ap.tsInput:D.input)===1) c2={pitch:c.pitch,roll:c.yaw,yaw:c.roll,thr:c.thr,thrAbs:c.thrAbs};
+    this.stepRotor(dt,c2,rho); this.tsFw=false; this.tsAng=Math.max(0,this.pitch);
+    return;
+  }
+  if(this.tsMode==='toFw'||this.tsMode==='toVt') return this.stepTrans(dt,rho);
+  /* vuelo adelante */
+  if(this.tsReq==='vtol' && flying && !this.stalledAbort){
+    var e=this.alpha+this.gamma;
+    this.tsMode='toVt'; this.tsT=0; this.tsAng=clamp(Math.PI/2-e,0,Math.PI/2); this.tsFw=false; this.pitch=this.tsAng; this.tsMsg='Transición a VTOL…'; this.tsMsgT=this.t;
+    return this.stepTrans(dt,rho);
+  }
+  this.tsFw=true; this.stepFixed(dt,c,rho);
+};
+
+F.stepTrans = function(dt,rho){
+  var ac=this.ac, fr=ac.frame, w=this.world, p=this.pos, v=this.vel, m=ac.mass, W=ac.W, ap=this.st.ap||{}, D=SM.tsDefaults, nm=ac.nMotors;
+  var toFw=this.tsMode==='toFw', wd=this.wcur;
+  var angFw=(ap.tsAngle||D.angle)*deg, angVt=((ap.tsAngVt||0)||(ap.tsAngle||D.angle))*deg;
+  var rate=(toFw?(ap.tsRatFw||D.ratFw):(ap.tsRatVt||D.ratVt))*deg;
+  this.tsT+=dt;
+  var ang=this.tsAng;
+  if(toFw) ang=Math.min(angFw,ang+rate*dt); else ang=Math.max(angVt-0.02,ang-rate*dt);
+  this.tsAng=ang;
+  var sy=Math.sin(this.yaw), cy=Math.cos(this.yaw), fx=sy, fz=-cy, rx=cy, rz=sy;
+  var vf=v.x*fx+v.z*fz-(wd.x*fx+wd.z*fz), vr=v.x*rx+v.z*rz-(wd.x*rx+wd.z*rz), vy=v.y-wd.y;
+  var Vr=Math.max(0.1,Math.hypot(vf,vy)), uf=vf/Vr, uy=vy/Vr;
+  var gam=Math.atan2(vy,vf), e=Math.PI/2-ang, al=e-gam; while(al>Math.PI) al-=2*Math.PI; while(al<-Math.PI) al+=2*Math.PI;
+  var S=fr.S, AR=fr.b*fr.b/S, k=1/(Math.PI*fr.e*AR), q=0.5*rho*Vr*Vr, co=ctsA(fr,k,al);
+  var L=q*S*co.CL, Dg=q*S*co.CD+0.5*rho*Vr*Vr*ac.accCd;
+  var lf=-uy*L, ly=uf*L, df=-uf*Dg, dy=-uy*Dg;
+  var nf=Math.sin(ang), ny=Math.cos(ang);
+  var Tm1=SM.maxThrust(ac,this.V,rho), Tmax=(this.dod>1.08||this.chuteOpen)?0:Tm1*nm;
+  var need=m*(G+clamp(2.5*(0-v.y),-4,4))-(ly+dy);
+  var Tc=clamp(need/Math.max(ny,0.35),toFw?1.2*W:0.25*W,Tmax);
+  this.sat=need/Math.max(ny,0.35)>Tmax*0.98;
+  this.Tcur+=(Tc-this.Tcur)*Math.min(1,dt/0.06); var Tt=this.Tcur;
+  var ax=(Tt*nf+lf+df)/m, ay=(Tt*ny+ly+dy)/m-G, ar=-1.5*vr;
+  v.x+=(ax*fx+ar*rx)*dt; v.z+=(ax*fz+ar*rz)*dt; v.y+=ay*dt;
+  p.x+=v.x*dt; p.y+=v.y*dt; p.z+=v.z*dt;
+  this.pitch=ang; this.roll=0; this.tsFw=false;
+  this.accel={x:ax*fx,y:ay+G,z:ax*fz}; this.gload=Math.hypot(ax,ay+G)/G;
+  this.alpha=al; this.gamma=gam; this.Va=Vr; this.CL=co.CL; this.LoD=L/Math.max(Dg,0.01);
+  /* potencia: todos los motores VTOL activos durante la transición */
+  var n1=SM.rotorPower(ac,Tt/nm,rho), tl=1-0.18*Math.min(1,Vr/12);
+  this.P=(Tmax>0?n1.P*tl*nm:0)/(ac.effM*ac.effE)+ac.accW+ac.avW; this.rpm=n1.n*60; this.nmax=SM.maxN(ac,this.V);
+  this.thrPct=Tmax>0?Math.min(100,100*n1.n/this.nmax):0; this.Tmax=Tmax; this.TWR=Tmax/W;
+  /* fin de la transición */
+  var CLmax=fr.CL0+fr.CLa*fr.aMax*deg, Vs=Math.sqrt(2*W/(rho*S*CLmax)); this.Vs=Vs;
+  if(toFw && ang>=angFw-1e-3 && (Vr>=0.9*Vs || this.tsT>7)){
+    var Tm0=ac.ct*rho*Math.pow(SM.maxN(ac,this.V),2)*Math.pow(ac.D,4);
+    this.tsMode='fw'; this.tsFw=true; this.chi=this.yaw; this.Va=Vr; this.gamma=gam; this.alpha=clamp(al,-10*deg,fr.aMax*deg*1.6);
+    this.thr=clamp(Math.sqrt(Math.max(0,Tt/(Math.max(1,ac.nFw)*Math.max(Tm0,1e-3)))),0.3,1); this.roll=0;
+    this.tsMsg='Vuelo adelante (FBWA)'; this.tsMsgT=this.t; this.tsReq='fw'; this.tsAuto=false;
+  } else if(!toFw && ang<=angVt+1e-3){
+    this.tsMode='vtol'; this.tsFw=false; this.tsReq='vtol'; this.pitch=ang; this.roll=0; this.iF=this.iR=0; this.iZ=0; this.yawRate=0;
+    this.tsMsg='Modo VTOL'; this.tsMsgT=this.t;
+    if(this.landNow||this.rth) this.tsAuto=false;
+  }
+  /* suelo */
+  var gh=w.floorH(p.x,p.y,p.z)+0.02;
+  if(p.y<=gh){ p.y=gh; this.crash('Impacto contra el suelo durante la transición ('+(toFw?'a vuelo adelante':'a VTOL')+'): faltó altura o empuje.'); }
+};
+})();
+if(typeof module!=='undefined') module.exports=SM;
 
 /* ===== ESCENARIOS: terreno, obstáculos, zonas (lógica, sin gráficos) ===== */
 var SW = {};
@@ -2335,7 +2479,7 @@ R3D.buildDrone=function(ac){
   var root=new THREE.Group(), body=new THREE.Group(); root.add(body);
   var fr=ac.frame, dim=fr.dim, props=[], spin=[], light=[];
   var dark=mat(0x2a3139), org=mat(0xe2552d), wht=mat(0xf3f3f0), teal=mat(0x1f8a8a);
-  var strobe=null;
+  var strobe=null, drone_legL=0;
   if(ac.kind==='multi'){
     var n=ac.rotors, R=dim/2, off=n===4?Math.PI/4:(n===3?Math.PI:Math.PI/n);
     var cb=new THREE.Mesh(new THREE.BoxGeometry(dim*0.26,dim*0.09,dim*0.34),dark); body.add(cb);
@@ -2366,6 +2510,38 @@ R3D.buildDrone=function(ac){
     var dsk2=new THREE.Mesh(new THREE.CircleGeometry(dim/2,28),new THREE.MeshBasicMaterial({color:0x2a3139,transparent:true,opacity:0.10,side:THREE.DoubleSide,depthWrite:false})); dsk2.rotation.x=-Math.PI/2; mr.add(dsk2);
     body.add(mr); props.push({g:mr,dir:-1,main:true});
     [-1,1].forEach(function(s){ var sk=new THREE.Mesh(new THREE.BoxGeometry(0.01,0.01,L*0.5),dark); sk.position.set(s*L*0.12,-L*0.14,-L*0.05); body.add(sk); var lg=new THREE.Mesh(new THREE.BoxGeometry(0.01,L*0.12,0.01),dark); lg.position.set(s*L*0.12,-L*0.08,-L*0.05); body.add(lg); });
+  } else if(ac.kind==='tailsitter'){
+    var tsd=ac.ts, tb=fr.b, tch=fr.S/tb, rc=tch*1.5, Dp2=ac.D, tid=ac.type.id;
+    body.add(new THREE.Mesh(wingGeom(tb,rc,tch*0.55,tch*0.45,0.03),wht));
+    var tst=new THREE.Mesh(wingGeom(tb*0.45,rc*0.7,tch*0.5,tch*0.3,0.034),org); tst.position.y=0.002; body.add(tst);
+    if(tsd.surf){ [-1,1].forEach(function(sg){ var ev=new THREE.Mesh(new THREE.BoxGeometry(tb*0.34,0.012,tch*0.2),teal); ev.position.set(sg*tb*0.3,0.01,tch*0.45+tch*0.1); body.add(ev); }); }
+    var legL=tch*1.05;
+    var legX=(tid==='ts-single')?[0]:[-1,1];
+    /* patas (trasera en hover) */
+    [-1,1].forEach(function(sg){ var lx=(tid==='ts-single')?sg*tb*0.12:sg*tb*0.28; var lg=new THREE.Mesh(new THREE.CylinderGeometry(0.008,0.008,legL-tch*0.2,6),dark); lg.rotation.x=Math.PI/2; lg.position.set(lx,0.0,(legL+tch*0.2)/2); body.add(lg); var ft=new THREE.Mesh(new THREE.SphereGeometry(0.014,6,6),dark); ft.position.set(lx,0,legL); body.add(ft); });
+    function tsMotor(x,y,z,dir,col,pods){
+      var pd=new THREE.Mesh(new THREE.CylinderGeometry(0.022,0.026,tch*0.7,10),pods||dark); pd.rotation.x=Math.PI/2; pd.position.set(x,y,z+tch*0.3); body.add(pd);
+      var pg=new THREE.Group(); pg.position.set(x,y,z-tch*0.08);
+      var bl=new THREE.Mesh(new THREE.BoxGeometry(Dp2,Dp2*0.07,0.004),mat(col||0x39424b)); pg.add(bl);
+      var dk=new THREE.Mesh(new THREE.CircleGeometry(Dp2/2,24),new THREE.MeshBasicMaterial({color:0x2a3139,transparent:true,opacity:0.14,side:THREE.DoubleSide,depthWrite:false})); pg.add(dk);
+      body.add(pg); props.push({g:pg,dir:dir,axis:'z'});
+    }
+    if(tid==='ts-single'){
+      tsMotor(0,0,-rc*0.5,1,0xe2552d);
+      [-1,1].forEach(function(sg){ var fn=new THREE.Mesh(new THREE.BoxGeometry(0.012,tch*0.7*sg*sg,tch*0.5),org); fn.position.set(0,sg*tch*0.35,tch*0.1); body.add(fn); });
+    } else if(tid==='ts-twin'||tid==='ts-twinvec'){
+      var vec=tid==='ts-twinvec';
+      [-1,1].forEach(function(sg,i){ tsMotor(sg*tb*0.19,0,-rc*0.42,(i?1:-1),0xe2552d,vec?teal:dark); });
+      [-1,1].forEach(function(sg){ var wl=new THREE.Mesh(new THREE.BoxGeometry(0.01,tch*0.5,tch*0.3),org); wl.position.set(sg*tb/2,tch*0.08,tch*0.35); body.add(wl); });
+    } else if(tid==='ts-tri'){
+      [-1,1].forEach(function(sg,i){ tsMotor(sg*tb*0.28,0,-rc*0.42,(i?1:-1),0xe2552d); });
+      var fn3=new THREE.Mesh(new THREE.BoxGeometry(0.012,tch*0.9,tch*0.55),org); fn3.position.set(0,tch*0.45,tch*0.1); body.add(fn3);
+      tsMotor(0,tch*0.9+Dp2*0.2,-rc*0.1,1,0x39424b);
+    } else {
+      var yq=Math.max(tch*0.5,Dp2*0.62);
+      [[-1,1],[1,1],[-1,-1],[1,-1]].forEach(function(q,i){ var xq=q[0]*tb*0.3, front=q[1]>0; var py=new THREE.Mesh(new THREE.BoxGeometry(0.012,Math.abs(yq),0.02),dark); py.position.set(xq,q[1]*yq/2,-rc*0.1); body.add(py); tsMotor(xq,q[1]*yq,-rc*0.1,(i%2?1:-1),front?0xe2552d:0x39424b); });
+    }
+    drone_legL=legL;
   } else {
     var b=fr.b, ch=fr.S/b;
     var isWing=ac.type.id==='fw-wing';
@@ -2388,15 +2564,15 @@ R3D.buildDrone=function(ac){
   }
   /* accesorios */
   var s=Math.max(dim,0.25);
-  if(ac.has('camhd')||ac.has('camir')||ac.has('camfpv')){ var cm=new THREE.Mesh(new THREE.SphereGeometry(s*0.06,10,8),mat(ac.has('camir')?0x8d5a2b:0x20262c)); cm.position.set(0,-s*0.07,-s*(ac.kind==='fixed'?0.0:0.12)); if(ac.kind==='fixed') cm.position.set(0,-0.03,-0.1); body.add(cm); }
-  if(ac.has('lidar')){ var ld=new THREE.Mesh(new THREE.CylinderGeometry(s*0.05,s*0.05,s*0.07,12),mat(0x3c4a57)); ld.position.set(0,s*0.12,s*0.04); if(ac.kind==='fixed') ld.position.set(0,0.06,0); body.add(ld); spin.push(ld); }
-  if(ac.has('chute')){ var ch2=new THREE.Mesh(new THREE.CylinderGeometry(s*0.05,s*0.05,s*0.09,10),mat(0xffffff)); ch2.position.set(0,s*0.1,s*0.1); if(ac.kind==='fixed') ch2.position.set(0,0.05,0.1); body.add(ch2); }
-  if(ac.has('strobe')){ strobe=new THREE.Mesh(new THREE.SphereGeometry(s*0.035,8,8),new THREE.MeshBasicMaterial({color:0x22ff44})); strobe.position.set(0,s*0.09,s*0.15); if(ac.kind==='fixed') strobe.position.set(0,0.08,0.3); body.add(strobe); }
+  if(ac.has('camhd')||ac.has('camir')||ac.has('camfpv')){ var cm=new THREE.Mesh(new THREE.SphereGeometry(s*0.06,10,8),mat(ac.has('camir')?0x8d5a2b:0x20262c)); cm.position.set(0,-s*0.07,-s*((ac.kind==='fixed'||ac.kind==='tailsitter')?0.0:0.12)); if(ac.kind==='fixed'||ac.kind==='tailsitter') cm.position.set(0,-0.03,-0.1); body.add(cm); }
+  if(ac.has('lidar')){ var ld=new THREE.Mesh(new THREE.CylinderGeometry(s*0.05,s*0.05,s*0.07,12),mat(0x3c4a57)); ld.position.set(0,s*0.12,s*0.04); if(ac.kind==='fixed'||ac.kind==='tailsitter') ld.position.set(0,0.06,0); body.add(ld); spin.push(ld); }
+  if(ac.has('chute')){ var ch2=new THREE.Mesh(new THREE.CylinderGeometry(s*0.05,s*0.05,s*0.09,10),mat(0xffffff)); ch2.position.set(0,s*0.1,s*0.1); if(ac.kind==='fixed'||ac.kind==='tailsitter') ch2.position.set(0,0.05,0.1); body.add(ch2); }
+  if(ac.has('strobe')){ strobe=new THREE.Mesh(new THREE.SphereGeometry(s*0.035,8,8),new THREE.MeshBasicMaterial({color:0x22ff44})); strobe.position.set(0,s*0.09,s*0.15); if(ac.kind==='fixed'||ac.kind==='tailsitter') strobe.position.set(0,0.08,0.3); body.add(strobe); }
   /* luz de posición (siempre visible) */
   var nl=new THREE.Mesh(new THREE.SphereGeometry(s*0.02,6,6),new THREE.MeshBasicMaterial({color:0xff4040})); nl.position.set(0,s*0.05,s*0.14); body.add(nl);
   root.scale.setScalar(1); S.scene.add(root);
   S.shadow.scale.setScalar(Math.max(0.3,dim*0.45));
-  drone={root:root,body:body,props:props,spin:spin,strobe:strobe,dim:dim,ac:ac};
+  drone={root:root,body:body,props:props,spin:spin,strobe:strobe,dim:dim,ac:ac,legL:drone_legL};
 };
 
 R3D.project=function(v3){ var v=v3.clone().project(S.cam); var c=S.r.domElement; return {x:(v.x*0.5+0.5)*c.clientWidth,y:(-v.y*0.5+0.5)*c.clientHeight,z:v.z}; };
@@ -2426,6 +2602,7 @@ R3D.update=function(f,dt,opts){
   drone.root.position.set(p.x,p.y+drone.dim*0.1,p.z);
   fireUpdate(f.status==='crashed'&&!!world.lava&&/lava/.test(f.crashMsg||''),p,dt,drone.dim);
   drone.root.rotation.set(-f.pitch,-f.yaw,-f.roll,'YXZ');
+  if(ac.kind==='tailsitter'){ var ex=f.tsFw?0:Math.PI/2; drone.body.rotation.x=ex; var el=ex-f.pitch; drone.body.position.y=drone.legL*Math.max(0,Math.sin(el)); drone.root.position.y=p.y; }
   /* hélices */
   var vis=(f.status==='flying'||f.status==='rolling'||f.status==='ground'&&f.Tcur>1)&&f.status!=='crashed';
   var run=(f.P>0 && (f.status==='flying'||f.status==='rolling'||f.Tcur>0.5))?1:0;
@@ -2454,9 +2631,9 @@ R3D.update=function(f,dt,opts){
     cam.position.set(p.x+fx*dh*0.18,p.y+dh*0.12,p.z+fz*dh*0.18);
     cam.up.set(0,1,0);
     cam.rotation.order='YXZ';
-    var up=(f.ac.kind==='fixed'?0:S.uptilt)*deg;
+    var tsx=f.ac.kind==='tailsitter'&&(f.tsMode==='toFw'||f.tsMode==='toVt'); if(tsx){ ptilt=0; } var up=(SM.fwNow(f)||tsx?0:S.uptilt)*deg;
     cam.rotation.set(-ptilt+(opts.gimbal?-0.12:up)*1.0,-f.yaw,-rtilt);
-    if(f.ac.kind!=='fixed' && !opts.gimbal) cam.rotation.x=-f.pitch+up;
+    if(!SM.fwNow(f) && !tsx && !opts.gimbal) cam.rotation.x=-f.pitch+up;
     cam.fov=opts.gimbal?70:78; cam.near=0.1;
   } else if(mode==='chase'){
     var dd=Math.max(3.2,dh*5+2.5), tx=p.x-fx*dd, ty=p.y+dd*0.35, tz=p.z-fz*dd;
@@ -2687,7 +2864,7 @@ function fillFrames(){
 function fillProps(){
   var kind=D(ST.cfg.type).kind;
   $('rProp').style.display=kind==='heli'?'none':'';
-  var list=kind==='fixed'?SD.PROPS_FW:SD.PROPS_MULTI;
+  var list=kind==='fixed'?SD.PROPS_FW:(kind==='tailsitter'?SD.PROPS_TS:SD.PROPS_MULTI);
   fill($('cProp'),list.map(function(p){return [p,p.replace('x',' × ')+'"'];}),ST.cfg.prop);
   if(list.indexOf(ST.cfg.prop)<0 && kind!=='heli') ST.cfg.prop=list[0];
 }
@@ -2821,6 +2998,15 @@ SIM.validate=function(){
     h+=cell('Planeo L/D',I.LD.toFixed(1));
     h+=cell('Carga alar',I.wingLoad.toFixed(2)+' kg/m²');
     h+=cell('Autonomía crucero','≈ '+I.cruiseMin.toFixed(0)+' min');
+  } else if(kind==='tailsitter'){
+    h+=cell('Empuje máx. (VTOL)',I.Tmax.toFixed(1)+' N');
+    h+=cell('Empuje / peso',I.twr.toFixed(2),I.twr<1.4?'bad':(I.twr<1.8?'mid':''));
+    h+=cell('Gas en estacionario',(I.hoverThr*100).toFixed(0)+' %',I.hoverThr>0.8?'mid':'');
+    h+=cell('Autonomía en VTOL','≈ '+I.hoverMin.toFixed(1)+' min',I.hoverMin<3?'mid':'');
+    h+=cell('Vel. pérdida Vs',I.Vs.toFixed(1)+' m/s',I.Vs>14?'mid':'');
+    h+=cell('Vel. crucero',(I.cruiseV*1.25).toFixed(0)+' m/s');
+    h+=cell('Planeo L/D',I.LD.toFixed(1));
+    h+=cell('Autonomía crucero','≈ '+I.cruiseMin.toFixed(0)+' min');
   } else {
     h+=cell('Empuje máx.',I.Tmax.toFixed(1)+' N');
     h+=cell('Empuje / peso',I.twr.toFixed(2),I.twr<1.25?'bad':(I.twr<2?'mid':''));
@@ -2839,6 +3025,7 @@ SIM.validate=function(){
   V.warns.forEach(function(e){ var li=document.createElement('li'); li.className='w'; li.innerHTML='<b>⚠</b> '+e; vl.appendChild(li); });
   if(!V.errors.length && !V.warns.length){ var li=document.createElement('li'); li.className='o'; li.innerHTML='✔ La configuración es coherente: motores, ESC, batería y peso están equilibrados.'; vl.appendChild(li); }
   else if(!V.errors.length){ var li2=document.createElement('li'); li2.className='o'; li2.innerHTML='✔ Puede volar (revisa los avisos).'; vl.appendChild(li2); }
+  if(SIM.AP&&SIM.AP.tsHint) SIM.AP.tsHint();
   var fs=$('flySt');
   if(V.errors.length){ fs.className='st bad'; fs.textContent='✘ Esta configuración no tiene sentido físico: corrígela para poder volar ('+V.errors.length+' error'+(V.errors.length>1?'es':'')+').'; $('bFly').disabled=true; }
   else { fs.className='st ok'; fs.textContent='✔ Lista para volar · '+(ac.cm?ac.cm.maker+' '+ac.cm.name:ac.type.name)+' · '+(I.mass*1000).toFixed(0)+' g · '+I.cat; $('bFly').disabled=false; }
@@ -3007,6 +3194,34 @@ AP.build=function(text){
   info('TRIM_ARSPD_CM','Velocidad de crucero: '+(P.TRIM_ARSPD_CM/100).toFixed(1)+' m/s (referencia)');
   if(has(P,'ALT_HOLD_RTL')&&!has(P,'RTL_ALT')){ used.ALT_HOLD_RTL=1; eff.rtlAlt=P.ALT_HOLD_RTL/100; rows.push({n:'ALT_HOLD_RTL',v:P.ALT_HOLD_RTL,t:'Altura del regreso a casa (ala fija): '+(P.ALT_HOLD_RTL/100).toFixed(0)+' m',c:'ok'}); }
 
+
+  /* --- Quadplane / tail-sitter (Q_*) --- */
+  use('Q_ANGLE_MAX',function(v){ if(v>0) eff.angleMax=v/100; },'Inclinación máxima en VTOL: '+(P.Q_ANGLE_MAX/100).toFixed(0)+'°');
+  use('Q_WP_SPEED',function(v){ if(v>0) eff.wpSpeed=v/100; },'Velocidad horizontal en VTOL (Q_WP_SPEED): '+(P.Q_WP_SPEED/100).toFixed(1)+' m/s');
+  use('Q_LAND_SPEED',function(v){ if(v>0) eff.landSpeed=v/100; },'Velocidad de aterrizaje VTOL final: '+(P.Q_LAND_SPEED/100).toFixed(0)+' cm/s');
+  use('Q_LAND_FINAL_SPD',function(v){ if(v>0) eff.landSpeed=v/100; },'Velocidad de aterrizaje VTOL final: '+P.Q_LAND_FINAL_SPD+' cm/s');
+  use('Q_PILOT_SPD_UP',function(v){ if(v>0) eff.climbUp=v/100; },'Velocidad máx. de ascenso VTOL: '+(P.Q_PILOT_SPD_UP/100).toFixed(1)+' m/s');
+  use('Q_PILOT_SPD_DN',function(v){ if(v>0) eff.climbDn=v/100; },'Velocidad máx. de descenso VTOL: '+(P.Q_PILOT_SPD_DN/100).toFixed(1)+' m/s');
+  use('Q_RTL_ALT',function(v){ if(v>0) eff.rtlAlt=v; },'Altura del regreso a casa en VTOL: '+P.Q_RTL_ALT+' m');
+  use('Q_TAILSIT_ANGLE',function(v){ if(v>5&&v<=85) eff.tsAngle=v; },'Ángulo de morro para dar por hecha la transición a adelante: '+P.Q_TAILSIT_ANGLE+'° (fábrica 60°)');
+  use('Q_TAILSIT_ANG_VT',function(v){ if(v>=0&&v<=85) eff.tsAngVt=v; },'Ángulo de la transición a VTOL: '+P.Q_TAILSIT_ANG_VT+'° (0 = usa Q_TAILSIT_ANGLE)');
+  use('Q_TAILSIT_RAT_FW',function(v){ if(v>0) eff.tsRatFw=v; },'Velocidad de la transición a adelante: '+P.Q_TAILSIT_RAT_FW+' °/s');
+  use('Q_TAILSIT_RAT_VT',function(v){ if(v>0) eff.tsRatVt=v; },'Velocidad de la transición a VTOL: '+P.Q_TAILSIT_RAT_VT+' °/s');
+  use('Q_TAILSIT_INPUT',function(v){ eff.tsInput=v; },'Mandos en VTOL: '+(P.Q_TAILSIT_INPUT===1?'tipo avión (alabeo/guiñada intercambiados respecto al cuerpo)':'tipo multicóptero'));
+  use('Q_TAILSIT_MIN_VO',null,'Velocidad mínima de salida de la transición (sólo informativo)','info');
+  ['Q_TAILSIT_MOTMX','Q_TAILSIT_THR_VT','Q_TAILSIT_VHGAIN','Q_TAILSIT_VFGAIN','Q_TAILSIT_VHPOW','Q_TAILSIT_GSCMSK','Q_TAILSIT_GSCMIN','Q_TAILSIT_RLL_MX','Q_TAILSIT_DSKLD','Q_TAILSIT_MIN_VO'].forEach(function(k){ info(k,'Ajuste fino real del tail-sitter: el simulador no lo emula (su control es ideal)'); });
+  info('Q_A_ANGLE_BOOST','En tail-sitter debe ser 0 (el empuje no se compensa con la inclinación)');
+  if(has(P,'Q_ENABLE')) info('Q_ENABLE','Quadplane '+(P.Q_ENABLE?'activado':'desactivado')+' (necesario para cualquier tail-sitter)');
+  if(has(P,'Q_TAILSIT_ENABLE')) info('Q_TAILSIT_ENABLE',P.Q_TAILSIT_ENABLE===2?'Tail-sitter sin superficies de control (control como copter en todos los modos)':(P.Q_TAILSIT_ENABLE===1?'Tail-sitter con superficies de control':'Tail-sitter desactivado'));
+  if(has(P,'Q_FRAME_CLASS')&&(has(P,'Q_TAILSIT_ENABLE')||has(P,'Q_ENABLE'))){ used.Q_FRAME_CLASS=1;
+    var qc=P.Q_FRAME_CLASS, te=has(P,'Q_TAILSIT_ENABLE')?P.Q_TAILSIT_ENABLE:0, tid=null, ttx='';
+    if(te>0){ if(te===2) tid='ts-quadpure'; else if(qc===7) tid='ts-tri'; else if(qc===1) tid='ts-quadsurf'; else if(qc===10) tid='ts-twin'; }
+    ttx='Q_FRAME_CLASS: '+({1:'Quad',7:'Tri',10:'Single/Dual'}[qc]||'otro')+(tid?' → equivale a «'+SD.byId(SD.TYPES,tid).name+'»':'');
+    rows.push({n:'Q_FRAME_CLASS',v:qc,t:ttx,c:'info'});
+    if(tid&&ST.cfg.type!==tid&&SD.STD[tid]) sugg.push({t:'El archivo es de un tail-sitter distinto del que tienes seleccionado.',b:'Cambiar a «'+SD.byId(SD.TYPES,tid).name+'»',fn:function(){ ST.cfg.type=tid; var d=SD.STD[tid]; Object.keys(d).forEach(function(k){ ST.cfg[k]=d[k]; }); ST.cfg.type=tid; SIM.refreshAll(); }});
+  }
+  if(has(P,'Q_FRAME_TYPE')) info('Q_FRAME_TYPE','Disposición de motores del quadplane: sólo informativo');
+
   /* --- información que sirve para comprobar la aeronave --- */
   var V=SIM.validate? (function(){ try{ return SM.validate(ST.cfg); }catch(e){ return null; } })() : null, I=V&&V.info;
   var frameNames={1:'quad',2:'hexa',3:'octa',4:'octa',5:'hexa',6:'heli',7:'tri',13:'heli',15:'heli'}, typeNames={quad:'cuadricóptero',hexa:'hexacóptero',octa:'octocóptero',tri:'tricóptero',heli:'helicóptero'};
@@ -3031,6 +3246,34 @@ AP.build=function(text){
   return {eff:eff,rows:rows,sugg:sugg,ignored:ignored,total:R.order.length,bad:R.bad};
 };
 
+
+/* generador de .param orientativo para cada variante tail-sitter */
+AP.tsParams=function(tid){
+  var d=SD.TS[tid]; if(!d) return '';
+  var L=['# SANT·SIM — parámetros ORIENTATIVOS de ArduPlane para: '+SD.byId(SD.TYPES,tid).name,
+   '# Revísalos con la documentación de ArduPilot antes de volar de verdad (versión de firmware, orden de salidas, sentido de giro de motores).',
+   'Q_ENABLE,1','Q_TAILSIT_ENABLE,'+d.enable,'Q_FRAME_CLASS,'+d.cls,'Q_FRAME_TYPE,'+d.typ,'Q_TAILSIT_MOTMX,'+d.motmx,
+   'Q_TAILSIT_ANGLE,'+SM.tsDefaults.angle,'Q_TAILSIT_ANG_VT,0','Q_TAILSIT_RAT_FW,'+SM.tsDefaults.ratFw,'Q_TAILSIT_RAT_VT,'+SM.tsDefaults.ratVt,
+   'Q_TAILSIT_INPUT,'+(d.enable===2?0:1),'Q_A_ANGLE_BOOST,0','Q_ANGLE_MAX,3000','Q_WP_SPEED,500','Q_LAND_SPEED,50','Q_RTL_ALT,30','Q_RTL_MODE,1','Q_TAILSIT_THR_VT,-1',
+   'KFF_RDDRMIX,0.5','LIM_ROLL_CD,4500','ARSPD_FBW_MIN,13','TRIM_ARSPD_CM,1800','THR_MAX,100','RTL_AUTOLAND,0'];
+  L.push('# Salidas (SERVOn_FUNCTION): '+d.outputs);
+  if(tid==='ts-single'){ L.push('SERVO1_FUNCTION,70','SERVO2_FUNCTION,77','SERVO3_FUNCTION,78'); }
+  else if(tid==='ts-twin'||tid==='ts-twinvec'){ L.push('SERVO1_FUNCTION,73','SERVO2_FUNCTION,74','SERVO3_FUNCTION,77','SERVO4_FUNCTION,78'); if(tid==='ts-twinvec') L.push('# Servos de inclinación de los motores en SERVO5/6: asigna la función «Tilt» que corresponda a tu firmware'); }
+  else if(tid==='ts-tri'){ L.push('SERVO1_FUNCTION,33','SERVO2_FUNCTION,34','SERVO3_FUNCTION,35','SERVO4_FUNCTION,77','SERVO5_FUNCTION,78','# Motor 3 (cola/inferior) con servo de guiñada según Q_FRAME_TYPE'); }
+  else if(tid==='ts-quadsurf'){ L.push('SERVO1_FUNCTION,33','SERVO2_FUNCTION,34','SERVO3_FUNCTION,35','SERVO4_FUNCTION,36','SERVO5_FUNCTION,77','SERVO6_FUNCTION,78'); }
+  else { L.push('SERVO1_FUNCTION,33','SERVO2_FUNCTION,34','SERVO3_FUNCTION,35','SERVO4_FUNCTION,36'); }
+  return L.join('\n')+'\n';
+};
+AP.tsHint=function(){
+  var el=$('tsHint'); if(!el) return; var tid=ST.cfg.type, d=SD.TS[tid];
+  if(!d){ el.style.display='none'; el.innerHTML=''; return; }
+  el.style.display='';
+  el.innerHTML='<div class="note" style="margin-top:10px;border-top:1px solid var(--line);padding-top:8px"><b>Configuración ArduPilot (ArduPlane + Quadplane)</b><br>'+
+   '<code>Q_ENABLE=1</code> · <code>Q_TAILSIT_ENABLE='+d.enable+'</code> · <code>Q_FRAME_CLASS='+d.cls+'</code> ('+d.clsName+') · <code>Q_FRAME_TYPE='+d.typ+'</code> · <code>Q_TAILSIT_MOTMX='+d.motmx+'</code><br>'+
+   'Salidas: '+d.outputs+'. En vuelo adelante empujan '+d.fw+' motor'+(d.fw>1?'es':'')+(d.vec?' · empuje vectorial con servos de inclinación':'')+(d.diff?' · guiñada por empuje diferencial':'')+'.<br>'+
+   'En vuelo: tecla <b>V</b> (o el botón de fase) para pasar de VTOL a adelante y viceversa. <button class="btn" id="bTsPar" type="button" style="margin-left:6px">Descargar .param orientativo</button></div>';
+  $('bTsPar').onclick=function(){ var b=new Blob([AP.tsParams(tid)],{type:'text/plain'}), a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download='santsim_'+tid+'.param'; document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },500); };
+};
 /* efectos activos (null si no hay archivo cargado o está desactivado) */
 var cacheT=null, cacheE=null;
 SIM.apEff=function(){
@@ -3216,7 +3459,7 @@ H.data=function(f,w,wx){
   d.agl=f.agl(); d.amsl=SIM.elev()+p.y; d.dist=f.hdist(); d.heading=((f.yaw/deg)%360+360)%360;
   d.bearing=((f.bearingHome()/deg)%360+360)%360;
   d.gs=f.hspeed(); d.vz=f.vel.y;
-  var wc=f.wcur; d.as=ac.kind==='fixed'?f.Va:Math.hypot(f.vel.x-wc.x,f.vel.y-wc.y,f.vel.z-wc.z);
+  var wc=f.wcur; d.as=SM.fwNow(f)?f.Va:Math.hypot(f.vel.x-wc.x,f.vel.y-wc.y,f.vel.z-wc.z);
   d.batt=Math.max(0,(1-f.dod)*100); d.V=f.V; d.cellV=f.V/ac.cfg.cells; d.I=f.I; d.P=f.P;
   var capEff=ac.battAh*SM.capFactor(wx.temp);
   d.remMin=f.P>8?Math.max(0,((1-f.dod-0.15)*capEff*f.V/f.P)*60):99;
@@ -3242,7 +3485,7 @@ var CELLS=[
  ['Vuelo','Distancia a casa',function(d){return [f1(d.dist,0),'m',d.dist>d.vlos?'c':(d.dist>d.vlos*0.8?'w':'')];}],
  ['Vuelo','Rumbo / a casa',function(d){return [f1(d.heading,0)+'/'+f1(d.bearing,0),'°',''];}],
  ['Vuelo','Vel. suelo',function(d){return [f1(d.gs*3.6,0),'km/h',''];}],
- ['Vuelo','Vel. aire',function(d,f){var s=''; if(f.ac.kind==='fixed'&&f.status==='flying'){ s=f.Va<f.Vs*1.15?'c':(f.Va<f.Vs*1.35?'w':(f.Va>f.ac.frame.vne*0.85?'w':'')); } return [f1(d.as*3.6,0),'km/h',s];}],
+ ['Vuelo','Vel. aire',function(d,f){var s=''; if(SM.fwNow(f)&&f.status==='flying'){ s=f.Va<f.Vs*1.15?'c':(f.Va<f.Vs*1.35?'w':(f.Va>f.ac.frame.vne*0.85?'w':'')); } return [f1(d.as*3.6,0),'km/h',s];}],
  ['Vuelo','Vel. vertical',function(d){return [f1(d.vz,1),'m/s',d.vz<-6?'c':(d.vz<-4?'w':'')];}],
  ['Vuelo','Actitud',function(d,f){return [f1(-f.pitch/deg,0)+'/'+f1(f.roll/deg,0),'°',''];}],
  ['Posición y Sol','Latitud',function(d){return [d.lat===null?'—':f1(Math.abs(d.lat),5),d.lat===null?'':'° '+(d.lat>=0?'N':'S'),d.lat===null?'w':''];}],
@@ -3255,8 +3498,8 @@ var CELLS=[
  ['Energía','Corriente',function(d,f){return [f1(d.I,1),'A',d.I>f.ac.battCmax?'c':(d.I>f.ac.battCmax*0.8?'w':'')];}],
  ['Energía','Potencia',function(d){return [f1(d.P,0),'W',''];}],
  ['Energía','Autonomía',function(d){return [d.remMin>=99?'—':f1(d.remMin,1),'min',sev(d.remMin,4,2,true)];}],
- ['Energía','Gas motores',function(d,f){return [f1(d.thr,0),'%',(f.sat&&f.ac.kind!=='fixed')?'c':(d.thr>90?'w':'')];}],
- ['Energía','Empuje / peso',function(d,f){ if(f.ac.kind==='fixed') return [f1(f.LoD,1),'L/D','']; return [f1(d.twr,2),'×',d.twr<1.3?'c':(d.twr<1.8?'w':'')];}],
+ ['Energía','Gas motores',function(d,f){return [f1(d.thr,0),'%',(f.sat&&!SM.fwNow(f))?'c':(d.thr>90?'w':'')];}],
+ ['Energía','Empuje / peso',function(d,f){ if(SM.fwNow(f)) return [f1(f.LoD,1),'L/D','']; return [f1(d.twr,2),'×',d.twr<1.3?'c':(d.twr<1.8?'w':'')];}],
  ['Atmósfera','Viento (en dron)',function(d,f){var mx=f.ac.frame.maxWind; return [f1(d.windSp,1),'m/s',d.windSp>mx?'c':(d.windSp>mx*0.75?'w':'')];}],
  ['Atmósfera','Procede de',function(d){return [f1(d.windFrom,0),'° · B'+d.beauf,''];}],
  ['Atmósfera','Ráfaga',function(d){return [f1(d.gust,1),'m/s',d.gust>6?'w':''];}],
@@ -3319,8 +3562,8 @@ H.alerts=function(d,f,w,wx){
   if(SIM.camMode==='fpv'){ if(d.v.margin<0) a('c','SIN SEÑAL DE VÍDEO'); else if(d.v.margin<8) a('w','VÍDEO DEGRADADO · '+f1(d.v.margin,0)+' dB'); }
   if(d.sats<6){ if(f.holdSrc==='FLUJO') a('i','SIN GNSS · retención por flujo óptico'); else a('w',(d.sats===0?'SIN GNSS':'GNSS DEGRADADO ('+d.sats+' sat.)')+' · modo ATTI'); } else if(f.mode==='ATTI' && ac.kind==='multi') a('i','MODO ATTI · sin retención de posición');
   var mx=ac.frame.maxWind; if(d.windSp>mx) a('c','VIENTO '+f1(d.windSp,0)+' m/s > MÁX. '+mx+' m/s'); else if(d.windSp>mx*0.75) a('w','VIENTO FUERTE · '+f1(d.windSp,0)+' m/s');
-  if(ac.kind!=='fixed' && f.sat && fl) a('w','EMPUJE AL LÍMITE · sin reserva');
-  if(ac.kind==='fixed' && f.status==='flying'){ if(f.stalled) a('c','PÉRDIDA (STALL) · baja el morro y da gas'); else if(f.Va<f.Vs*1.15) a('w','VELOCIDAD PRÓXIMA A PÉRDIDA'); if(f.Va>ac.frame.vne*0.85) a('w','VELOCIDAD CERCA DEL VNE'); }
+  if(!SM.fwNow(f) && f.sat && fl) a('w','EMPUJE AL LÍMITE · sin reserva');
+  if(SM.fwNow(f) && f.status==='flying'){ if(f.stalled) a('c','PÉRDIDA (STALL) · baja el morro y da gas'); else if(f.Va<f.Vs*1.15) a('w','VELOCIDAD PRÓXIMA A PÉRDIDA'); if(f.Va>ac.frame.vne*0.85) a('w','VELOCIDAD CERCA DEL VNE'); }
   var o=f.sens.obsDist; if(fl){ if(o<2.5) a('c','OBSTÁCULO a '+f1(o,1)+' m · '+f.sens.obsLabel); else if(o<7) a('w','OBSTÁCULO a '+f1(o,0)+' m · '+f.sens.obsLabel); }
   if(f.obsBrake) a('i','FRENADO AUTOMÁTICO (sensores)');
   if(fl){
@@ -3349,8 +3592,8 @@ H.alerts=function(d,f,w,wx){
     if(f.apWarn) a('w',f.apWarn);
   }
   if(f.landNow&&fl&&!f.rth) a('i','ATERRIZANDO · descenso controlado');
-  else if(fl&&ac.kind!=='fixed'&&d.agl<6&&d.vz<-3.2) a('w','DESCENSO RÁPIDO · '+f1(-d.vz,1)+' m/s · reduce antes de tocar');
-  if(fl&&d.agl<4&&ac.kind!=='fixed'){ var sl=w.slope(f.pos.x,f.pos.z), sd=Math.atan(Math.hypot(sl.x,sl.z))/deg; if(sd>10) a(sd>16?'c':'w','TERRENO INCLINADO '+f1(sd,0)+'° · riesgo de vuelco al posarse'); }
+  else if(fl&&!SM.fwNow(f)&&d.agl<6&&d.vz<-3.2) a('w','DESCENSO RÁPIDO · '+f1(-d.vz,1)+' m/s · reduce antes de tocar');
+  if(fl&&d.agl<4&&!SM.fwNow(f)){ var sl=w.slope(f.pos.x,f.pos.z), sd=Math.atan(Math.hypot(sl.x,sl.z))/deg; if(sd>10) a(sd>16?'c':'w','TERRENO INCLINADO '+f1(sd,0)+'° · riesgo de vuelco al posarse'); }
   if(f.rth) a('i','REGRESO A CASA · '+(f.rthPhase||'')+' ('+(f.rthReason||'')+')');
   if(f.chute>0||f.chuteOpen) a('i',f.chuteOpen?'PARACAÍDAS ABIERTO':'ABRIENDO PARACAÍDAS…');
   return A;
@@ -3734,6 +3977,7 @@ window.addEventListener('keydown',function(e){
     case 'KeyB': F.toggleLand(); break;
     case 'KeyH': if(F.rth) F.cancelRTH(); else if(F.status==='flying'||F.status==='rolling') F.startRTH('Manual'); break;
     case 'KeyQ': F.toggleMode(); break;
+    case 'KeyV': if(F.ac.kind==='tailsitter') F.toggleVtol(); break;
     case 'KeyF': F.toggleFail(); break;
     case 'KeyX': F.deployChute(); break;
     case 'KeyT': si=(si+1)%speeds.length; speed=speeds[si]; break;
@@ -3781,7 +4025,7 @@ function rows(d,f,w,wx){
    ['Vel. x / z',T(vv.x,2)+' / '+T(vv.z,2)+' m/s'],['Vel. vertical',T(vv.y,2)+' m/s'],
    ['Vel. suelo',T(d.gs,2)+' m/s ('+T(d.gs*3.6,1)+' km/h)'],['Vel. aire',T(d.as,2)+' m/s'],
    ['Cabeceo / alabeo',T(-f.pitch/deg,1)+' / '+T(f.roll/deg,1)+' °'],['Rumbo',T(d.heading,1)+' °'],
-   ['Factor de carga',T(f.gload,2)+' g'],['Modo de vuelo',ac.kind==='fixed'?'Estabilizado':(f.gpsActive?'GPS (retención)':'ATTI')],
+   ['Factor de carga',T(f.gload,2)+' g'],['Modo de vuelo',ac.kind==='tailsitter'?({vtol:'VTOL · '+(f.gpsActive?'QLOITER':'QSTABILIZE'),toFw:'Transición → adelante',fw:'Adelante · FBWA',toVt:'Transición → VTOL'}[f.tsMode]):(ac.kind==='fixed'?'Estabilizado':(f.gpsActive?'GPS (retención)':'ATTI'))],
    ['sec','Propulsión y energía'],
    ['Empuje actual',T(f.Tcur,2)+' N'],['Empuje máx.',T(f.Tmax||0,2)+' N'],
    ['Empuje / peso',T(d.twr,2)],['Gas motores',T(d.thr,1)+' %'],
@@ -3790,7 +4034,8 @@ function rows(d,f,w,wx){
    ['Tensión batería',T(f.V,2)+' V'],['Tensión por celda',T(d.cellV,3)+' V'],
    ['Capacidad usada',T(f.ahUsed*1000,0)+' mAh'],['Descarga (DoD)',T(f.dod*100,1)+' %'],
    ['Autonomía restante',(d.remMin>=99?'—':T(d.remMin,1)+' min')],['Peso / masa',T(ac.W,2)+' N / '+T(ac.mass*1000,0)+' g']];
-  if(ac.kind==='fixed') R.push(['sec','Aerodinámica (ala fija)'],['Áng. de ataque',T(f.alpha/deg,1)+' °'],['Áng. de trayectoria',T(f.gamma/deg,1)+' °'],['Coef. sustentación CL',T(f.CL,2)],['Finura L/D',T(f.LoD,1)],['Vel. pérdida Vs',T(f.Vs||0,1)+' m/s'],['Estado de ala',f.stalled?'EN PÉRDIDA':'normal'],['Vne',ac.frame.vne+' m/s']);
+  if(ac.kind==='tailsitter') R.push(['sec','Tail-sitter'],['Fase',{vtol:'VTOL',toFw:'Transición a adelante',fw:'Vuelo adelante',toVt:'Transición a VTOL'}[f.tsMode]],['Ángulo del morro (vert.)',T(f.tsAng/deg,0)+' °'],['Q_TAILSIT_ENABLE',String(ac.ts.enable)],['Q_FRAME_CLASS',ac.ts.cls+' ('+ac.ts.clsName+')'],['Motores activos adelante',ac.ts.fw+' de '+ac.nMotors]);
+  if(SM.fwNow(f)) R.push(['sec','Aerodinámica (ala fija)'],['Áng. de ataque',T(f.alpha/deg,1)+' °'],['Áng. de trayectoria',T(f.gamma/deg,1)+' °'],['Coef. sustentación CL',T(f.CL,2)],['Finura L/D',T(f.LoD,1)],['Vel. pérdida Vs',T(f.Vs||0,1)+' m/s'],['Estado de ala',f.stalled?'EN PÉRDIDA':'normal'],['Vne',ac.frame.vne+' m/s']);
   R.push(['sec','Atmósfera y viento'],
    ['Viento medio',T(d.windMean,2)+' m/s'],['Ráfaga',T(d.gust,2)+' m/s'],
    ['Viento total en dron',T(d.windSp,2)+' m/s'],['Componente vertical',T(f.wcur.y,2)+' m/s'],
@@ -3877,16 +4122,20 @@ function markOverlay(d){
 
 /* ---------- panel de teclas y chips ---------- */
 function keysPanel(){ var _t=$('tbChute'); if(_t) _t.style.display=(F&&F.ac.has('chute'))?'':'none';
-  var fx=F&&F.ac.kind==='fixed';
-  $('keys').innerHTML=(fx?'<div><b>W / S</b>gas + / −</div><div><b>↑ ↓</b>morro abajo / arriba</div><div><b>← →</b>alabeo (virar)</div><div><b>A / D</b>timón</div>':'<div><b>W / S</b>subir / bajar</div><div><b>A / D</b>girar</div><div><b>↑ ↓ ← →</b>desplazar</div>')
+  var fx=F&&SM.fwNow(F);
+  $('keys').innerHTML=(F&&F.ac.kind==='tailsitter'?'<div><b>V</b>VTOL ⇄ vuelo adelante</div>':'')+(fx?'<div><b>W / S</b>gas + / −</div><div><b>↑ ↓</b>morro abajo / arriba</div><div><b>← →</b>alabeo (virar)</div><div><b>A / D</b>timón</div>':'<div><b>W / S</b>subir / bajar</div><div><b>A / D</b>girar</div><div><b>↑ ↓ ← →</b>desplazar</div>')
    +'<div><b>Espacio</b>pausa · <kbd>N</kbd> paso</div><div><b>C</b>cámara · <kbd>H</kbd> RTH · <kbd>R</kbd> reiniciar</div><div><b>Esc</b>hangar · <kbd>F1</kbd> ayuda</div>';
 }
-$('chips').addEventListener('click',function(e){ var b=e.target.closest&&e.target.closest('button[data-cam]'); if(b&&!b.disabled&&F&&!hangarOpen) setCam(b.dataset.cam); });
+$('chips').addEventListener('click',function(e){ if(e.target.id==='chTs'&&F&&!hangarOpen){ F.toggleVtol(); return; }  var b=e.target.closest&&e.target.closest('button[data-cam]'); if(b&&!b.disabled&&F&&!hangarOpen) setCam(b.dataset.cam); });
 function chips(d){
   var s=[]; var st={ground:'En tierra',landed:'En tierra',flying:'En vuelo',rolling:'Rodando',crashed:'Siniestrado'}[F.status];
   s.push('<span class="chip">'+(F.ac.cm?F.ac.cm.name:F.ac.type.name.split(' (')[0])+'</span>');
   s.push('<span class="chip cams">Cám: '+cams.map(function(m,i){ var off=(m==='fpv'&&!hasCam()); return '<button type="button" data-cam="'+m+'"'+(m===SIM.camMode?' class="on"':'')+(off?' disabled title="Este dron no lleva cámara (añádela en el hangar)"':' title="Tecla '+(i+1)+'"')+'>'+({vlos:'Vista',fpv:'FPV',chase:'Seguim.',top:'Cenital'})[m]+'</button>'; }).join('')+'</span>');
-  if(F.ac.kind!=='fixed') s.push('<span class="chip">Modo: <b>'+(F.rth?'RTH':(F.gpsActive?(F.holdSrc==='FLUJO'?'FLUJO ÓPTICO':'GPS'):'ATTI'))+'</b></span>');
+  if(F.ac.kind==='tailsitter'){ var tl={vtol:'VTOL · '+(F.gpsActive?'QLOITER':'QSTABILIZE'),toFw:'Transición → adelante',fw:'Adelante · FBWA',toVt:'Transición → VTOL'}[F.tsMode]; var tgt=(F.tsMode==='vtol'||F.tsMode==='toVt')?'adelante':'VTOL';
+    s.push('<span class="chip"><button type="button" id="chTs" title="Cambiar de fase (tecla V): pasar a '+tgt+'" style="font-weight:700">'+tl+(F.rth?' · RTH':'')+' ⇄</button></span>');
+    if(F.tsMsg && F.t-F.tsMsgT<4) s.push('<span class="chip p"><b>'+F.tsMsg+'</b></span>');
+    var kk=F.tsMode+(F.tsFw?'1':'0'); if(keysPanel._k!==kk){ keysPanel._k=kk; keysPanel(); } }
+  else if(!SM.fwNow(F)) s.push('<span class="chip">Modo: <b>'+(F.rth?'RTH':(F.gpsActive?(F.holdSrc==='FLUJO'?'FLUJO ÓPTICO':'GPS'):'ATTI'))+'</b></span>');
   s.push('<span class="chip"><b>'+st+'</b></span>');
   if(SIM.PAD.out.on) s.push('<span class="chip">Emisora <b>activa</b></span>');
   if(speed!==1) s.push('<span class="chip">Sim <b>×'+speed+'</b></span>');

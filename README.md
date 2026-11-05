@@ -66,6 +66,23 @@ Simulador de drones que funciona en el navegador, sin instalar nada y sin conexi
 
 **Normativa europea en vivo** (Reglamento UE 2019/947): altura máxima, línea de vista, vuelo FPV con observador, sobrevuelo de personas, categoría y subcategoría según masa, registro de operador e identificación remota.
 
+**Tail-sitter VTOL (ArduPilot Quadplane)**: seis variantes de ala volante que despegan y aterrizan sobre la cola y pasan a vuelo adelante en el aire.
+
+| Variante | `Q_TAILSIT_ENABLE` | `Q_FRAME_CLASS` | Motores en vuelo adelante |
+|---|---|---|---|
+| Monomotor 3D (con superficies) | 1 | 10 Single/Dual | 1 |
+| Bimotor (dos motores fijos + elevones) | 1 | 10 Single/Dual | 2 |
+| Bimotor vectorial (servos de inclinación) | 1 | 10 Single/Dual | 2 |
+| Tricóptero tail-sitter | 1 | 7 Tri | 2 (`Q_TAILSIT_MOTMX`) |
+| Cuatro motores con superficies | 1 | 1 Quad | 2 (`Q_TAILSIT_MOTMX`) |
+| Cuatro motores sin superficies | 2 | 1 Quad | 4 |
+
+- **V** (o el botón de fase en la barra superior) cambia entre VTOL y vuelo adelante; el regreso a casa (RTH) convierte a VTOL cerca de casa y aterriza en vertical.
+- En el hangar cada variante muestra su configuración ArduPilot (`Q_ENABLE`, `Q_FRAME_CLASS`, `Q_TAILSIT_*`, salidas) y permite descargar un `.param` orientativo.
+- La pestaña de parámetros reconoce `Q_TAILSIT_ANGLE`, `ANG_VT`, `RAT_FW`, `RAT_VT`, `INPUT`, `Q_ANGLE_MAX`, `Q_WP_SPEED`, `Q_LAND_SPEED`, `Q_RTL_ALT` y propone cambiar a la variante que corresponda al archivo.
+
+![Seis variantes tail-sitter en estacionario](img/tail-sitter-variantes.png)
+
 **Herramientas de estudio**
 - Registro de vuelo con gráficas y exportación a CSV.
 - Pausa, avance paso a paso e inspector de valores.
@@ -88,6 +105,7 @@ Simulador de drones que funciona en el navegador, sin instalar nada y sin conexi
 
 ## Limitaciones
 
+- Tail-sitter: aerodinámica de la transición simplificada; la entrada a vuelo adelante exige altura mínima (15 m) y velocidad suficiente, a diferencia de ArduPilot; el ajuste fino (`Q_TAILSIT_VHGAIN`, `GSCMSK`…) no se emula. Los `.param` generados son orientativos.
 - Es un simulador didáctico, no un SITL ni un simulador certificado: la dinámica es simplificada y los parámetros de ArduPilot se interpretan de forma aproximada.
 - En los modelos comerciales, el motor y la hélice equivalentes están estimados (el fabricante no los publica); masa, autonomía y velocidades se ajustan a la ficha.
 - La emisora real se ha probado por cable con una radio EdgeTX; el dongle inalámbrico (Spektrum) está pendiente de probar. Conviene revisar ejes e inversiones con cada radio.
