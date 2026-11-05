@@ -2,6 +2,8 @@
 
 **▶ Abrir el simulador: https://nutshell-electronica.github.io/simulador-drones/**
 
+> 🌐 [English version → README_EN.md](README_EN.md)
+
 Simulador de drones que funciona en el navegador, sin instalar nada y sin conexión a internet. Está pensado para **aprender cómo se comporta un dron y por qué**: no solo se vuela, también se ven la potencia, la batería, el viento, la señal de radio, el GNSS y la normativa europea mientras ocurre.
 
 ![Hangar: elección de aeronave y ficha del fabricante](img/hangar.png)
@@ -108,7 +110,7 @@ Simulador de drones que funciona en el navegador, sin instalar nada y sin conexi
 - Tail-sitter: aerodinámica de la transición simplificada; la entrada a vuelo adelante exige altura mínima (15 m) y velocidad suficiente, a diferencia de ArduPilot; el ajuste fino (`Q_TAILSIT_VHGAIN`, `GSCMSK`…) no se emula. Los `.param` generados son orientativos.
 - Es un simulador didáctico, no un SITL ni un simulador certificado: la dinámica es simplificada y los parámetros de ArduPilot se interpretan de forma aproximada.
 - En los modelos comerciales, el motor y la hélice equivalentes están estimados (el fabricante no los publica); masa, autonomía y velocidades se ajustan a la ficha.
-- La emisora real se ha probado por cable con una radio EdgeTX; el dongle inalámbrico (Spektrum) está pendiente de probar. Conviene revisar ejes e inversiones con cada radio.
+- La emisora real se ha probado por cable con una radio EdgeTX y con el dongle inalámbrico (Spektrum) en casa; en otro entorno (aula) puede requerir revisar la configuración. Conviene revisar ejes e inversiones con cada radio.
 
 ## Archivos
 
