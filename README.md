@@ -98,7 +98,7 @@ Simulador de drones que funciona en el navegador, sin instalar nada y sin conexi
 |---|---|
 | Teclado | W/S altura · A/D giro · flechas desplazamiento · Espacio pausa · C cámara · H regreso a casa · Q GPS/ATTI · F1 ayuda |
 | Táctil | Palancas en pantalla (móvil o tableta) |
-| **Emisora real** | Cualquier radio que el navegador vea como mando (cable USB en modo *Joystick HID*, cable de simulador o dongle). Perfiles AETR, TAER y mando de consola, con detección automática de ejes e interruptores. Incluye guía para RadioMaster TX16S con dongle Spektrum |
+| **Emisora real** | Cualquier radio que el navegador vea como mando (cable USB en modo *Joystick HID*, cable de simulador o dongle). Perfiles AETR, TAER y mando de consola (modos 1–4), con detección automática de ejes e interruptores. Incluye guía para RadioMaster TX16S con dongle Spektrum |
 
 ## Uso en el aula
 
@@ -111,7 +111,7 @@ Simulador de drones que funciona en el navegador, sin instalar nada y sin conexi
 - Tail-sitter: aerodinámica de la transición simplificada; la entrada a vuelo adelante exige altura mínima (15 m) y velocidad suficiente, a diferencia de ArduPilot; el ajuste fino (`Q_TAILSIT_VHGAIN`, `GSCMSK`…) no se emula. Los `.param` generados son orientativos.
 - Es un simulador didáctico, no un SITL ni un simulador certificado: la dinámica es simplificada y los parámetros de ArduPilot se interpretan de forma aproximada.
 - En los modelos comerciales, el motor y la hélice equivalentes están estimados (el fabricante no los publica); masa, autonomía y velocidades se ajustan a la ficha.
-- La emisora real se ha probado por cable con una radio EdgeTX y con el dongle inalámbrico (Spektrum) en casa; en otro entorno (aula) puede requerir revisar la configuración. Conviene revisar ejes e inversiones con cada radio.
+- La emisora real se ha probado con una radio EdgeTX por cable y de forma inalámbrica con el dongle (Spektrum): el stick derecho responde al instante. Conviene revisar ejes e inversiones con cada radio.
 
 ## Archivos
 

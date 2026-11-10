@@ -100,7 +100,7 @@ A drone simulator that runs in the browser, with nothing to install and no inter
 |---|---|
 | Keyboard | W/S altitude · A/D yaw · arrow keys move · Space pause · C camera · H return home · Q GPS/ATTI · V tail-sitter phase · F1 help |
 | Touch | On-screen sticks (phone or tablet) |
-| **Real transmitter** | Any radio the browser sees as a gamepad (USB cable in *Joystick HID* mode, simulator cable or dongle). AETR, TAER and console-gamepad profiles, with automatic axis and switch detection. Includes a guide for the RadioMaster TX16S with a Spektrum dongle |
+| **Real transmitter** | Any radio the browser sees as a gamepad (USB cable in *Joystick HID* mode, simulator cable or dongle). AETR and TAER profiles and console gamepad (modes 1–4), with automatic axis and switch detection. Includes a guide for the RadioMaster TX16S with a Spektrum dongle |
 
 ## Classroom use
 
@@ -113,7 +113,7 @@ A drone simulator that runs in the browser, with nothing to install and no inter
 - Tail-sitter: the transition aerodynamics are simplified; entering forward flight requires a minimum height (15 m) and enough airspeed, unlike ArduPilot; fine tuning (`Q_TAILSIT_VHGAIN`, `GSCMSK`…) is not emulated. The generated `.param` files are indicative only.
 - It is a teaching simulator, not an SITL nor a certified simulator: the dynamics are simplified and ArduPilot parameters are interpreted approximately.
 - For commercial models, the equivalent motor and propeller are estimated (the manufacturer does not publish them); mass, endurance and speeds are fitted to the data sheet.
-- The real transmitter has been tested over cable with an EdgeTX radio and with the wireless dongle (Spektrum) at home; in another environment (classroom) it may need its configuration checked. Check axes and reversals with each radio.
+- The real transmitter has been tested with an EdgeTX radio over cable and wirelessly through the dongle (Spektrum): the right stick responds instantly. Check axes and reversals with each radio.
 
 ## Files
 
