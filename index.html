@@ -2461,8 +2461,8 @@ R3D.loadWorld=function(w){
   }
   if(w.shapes){ w.shapes.forEach(function(q,i){
     var g=q.ell?new THREE.CircleGeometry(1,48):new THREE.PlaneGeometry(1,1); g.rotateX(-Math.PI/2);
-    var m=new THREE.Mesh(g,new (q.glow?THREE.MeshBasicMaterial:THREE.MeshLambertMaterial)({color:q.hex,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-2}));
-    m.scale.set(q.ell?q.w/2:q.w,1,q.ell?q.d/2:q.d); m.rotation.y=q.rot; m.position.set(q.x,0.04+i*0.003,q.z); m.renderOrder=1+i; G.add(m); }); }
+    var m=new THREE.Mesh(g,new (q.glow?THREE.MeshBasicMaterial:THREE.MeshLambertMaterial)({color:q.hex,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-2,depthWrite:false}));
+    m.scale.set(q.ell?q.w/2:q.w,1,q.ell?q.d/2:q.d); m.rotation.y=q.rot; m.position.set(q.x,0.04,q.z); m.renderOrder=1+i; G.add(m); }); }
   if(w.sea){ var sg=new THREE.PlaneGeometry(EXT*2,EXT*2); sg.rotateX(-Math.PI/2);
     var sea=new THREE.Mesh(sg,new THREE.MeshLambertMaterial({color:0x2f7fa6,transparent:true,opacity:0.82})); sea.position.y=0.02; G.add(sea); }
   /* decales */
