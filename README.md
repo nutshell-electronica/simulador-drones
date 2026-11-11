@@ -60,6 +60,22 @@ Simulador de drones que funciona en el navegador, sin instalar nada y sin conexi
 
 ![Recorrido completado con tiempos parciales](img/competicion-fin.png)
 
+**Gráficos realistas con selector de calidad**
+- Iluminación física con sombras reales del sol, cielo con nubes en movimiento, estrellas de noche y reflejos del entorno.
+- Modelos detallados de todas las aeronaves: motores, hélices que se difuminan al girar, tren de aterrizaje, baterías y cámaras, con aspecto propio para cada dron comercial (Tello, Mini, Air, Mavic, Avata, Matrice, eBee).
+- Escenarios con textura de terreno, árboles con volumen, agua con reflejos, lava animada y fachadas con ventanas que se encienden al anochecer.
+- Botón **Gráficos** en la barra superior: Auto, Bajo, Medio, Alto y Ultra. *Auto* empieza en Alto y baja de nivel por sí solo si el equipo no llega a unos 27 fotogramas por segundo. También se puede fijar con `?gfx=low`, `med`, `high` o `ultra` al final de la dirección.
+
+![Hexacóptero en vuelo con sombras y hélices difuminadas](img/graficos-dron-vuelo.png)
+
+![Dron comercial en detalle](img/graficos-dron-comercial.png)
+
+![Ciudad de noche con ventanas iluminadas](img/graficos-ciudad-noche.png)
+
+![Costa al atardecer con reflejos en el agua](img/graficos-costa-atardecer.png)
+
+![Barrio residencial de día con sombras](img/graficos-barrio.png)
+
 **Cuatro cámaras**: a la vista (VLOS), FPV, seguimiento y cenital, con mapa y HUD.
 
 ![Vista cenital con mapa y datos de vuelo](img/cenital.png)
@@ -109,6 +125,7 @@ Simulador de drones que funciona en el navegador, sin instalar nada y sin conexi
 ## Limitaciones
 
 - Tail-sitter: aerodinámica de la transición simplificada; la entrada a vuelo adelante exige altura mínima (15 m) y velocidad suficiente, a diferencia de ArduPilot; el ajuste fino (`Q_TAILSIT_VHGAIN`, `GSCMSK`…) no se emula. Los `.param` generados son orientativos.
+- Gráficos: el nivel adecuado depende de la tarjeta gráfica de cada equipo; si va lento, baja el nivel con el botón «Gráficos» (o déjalo en Auto).
 - Es un simulador didáctico, no un SITL ni un simulador certificado: la dinámica es simplificada y los parámetros de ArduPilot se interpretan de forma aproximada.
 - En los modelos comerciales, el motor y la hélice equivalentes están estimados (el fabricante no los publica); masa, autonomía y velocidades se ajustan a la ficha.
 - La emisora real se ha probado con una radio EdgeTX por cable y de forma inalámbrica con el dongle (Spektrum): el stick derecho responde al instante. Conviene revisar ejes e inversiones con cada radio.

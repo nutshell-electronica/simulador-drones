@@ -62,6 +62,22 @@ A drone simulator that runs in the browser, with nothing to install and no inter
 
 ![Completed course with split times](img/competicion-fin.png)
 
+**Realistic graphics with a quality selector**
+- Physically based lighting with real sun shadows, a sky with moving clouds, stars at night and environment reflections.
+- Detailed models of every aircraft: motors, propellers that blur when spinning, landing gear, batteries and cameras, with a specific look for each commercial drone (Tello, Mini, Air, Mavic, Avata, Matrice, eBee).
+- Scenarios with ground textures, trees with volume, reflective water, animated lava and facades whose windows light up at dusk.
+- **Graphics** button in the top bar: Auto, Low, Medium, High and Ultra. *Auto* starts at High and steps down by itself if the computer cannot reach about 27 frames per second. It can also be set with `?gfx=low`, `med`, `high` or `ultra` at the end of the address.
+
+![Hexacopter in flight with shadows and blurred propellers](img/graficos-dron-vuelo.png)
+
+![Commercial drone close-up](img/graficos-dron-comercial.png)
+
+![City at night with lit windows](img/graficos-ciudad-noche.png)
+
+![Coast at sunset with reflections on the water](img/graficos-costa-atardecer.png)
+
+![Residential neighbourhood by day with shadows](img/graficos-barrio.png)
+
 **Four cameras**: line of sight (VLOS), FPV, chase and top-down, with map and HUD.
 
 ![Top-down view with map and flight data](img/cenital.png)
@@ -111,6 +127,7 @@ A drone simulator that runs in the browser, with nothing to install and no inter
 ## Limitations
 
 - Tail-sitter: the transition aerodynamics are simplified; entering forward flight requires a minimum height (15 m) and enough airspeed, unlike ArduPilot; fine tuning (`Q_TAILSIT_VHGAIN`, `GSCMSK`…) is not emulated. The generated `.param` files are indicative only.
+- Graphics: the right level depends on each computer's graphics card; if it runs slowly, lower the level with the «Graphics» button (or leave it on Auto).
 - It is a teaching simulator, not an SITL nor a certified simulator: the dynamics are simplified and ArduPilot parameters are interpreted approximately.
 - For commercial models, the equivalent motor and propeller are estimated (the manufacturer does not publish them); mass, endurance and speeds are fitted to the data sheet.
 - The real transmitter has been tested with an EdgeTX radio over cable and wirelessly through the dongle (Spektrum): the right stick responds instantly. Check axes and reversals with each radio.
