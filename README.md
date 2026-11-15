@@ -76,6 +76,23 @@ Simulador de drones que funciona en el navegador, sin instalar nada y sin conexi
 
 ![Barrio residencial de día con sombras](img/graficos-barrio.png)
 
+**Entorno vivo y siniestros creíbles**
+- El **operador** está junto a la plataforma con la emisora en las manos y sigue al dron con la mirada; en FPV lleva las gafas puestas.
+- Personas, gaviotas y cometas con modelos nuevos (cuerpo articulado, aleteo y planeo, cometas delta con brida y cola de cintas).
+- **Azoteas y cubiertas planas aterrizables** en todos los escenarios: posarse con suavidad en un edificio es aterrizaje, no siniestro.
+- **Amerizaje**: salpicadura, ondas en el agua, sonido y el dron se hunde.
+- **Explosión**: un impacto contra el suelo o un edificio a más de 12 m/s (≈43 km/h) destruye la aeronave: bola de fuego, chispas, restos que salen despedidos, columna de humo y marca en el suelo.
+- Cada **aviso** del HUD es clicable: explica qué ocurre y qué hacer, y permite seguir, reiniciar o volver al hangar.
+- **Hangar con aspecto de consola**: pantallas de configuración oscuras de alto contraste, ligeramente retro; el botón *Tema* cambia al aspecto claro.
+
+![Operador con la emisora junto a la plataforma](img/operador.png)
+
+![Explosión al impactar a alta velocidad](img/explosion.png)
+
+![Amerizaje: salpicadura y ondas](img/amerizaje.png)
+
+![Hangar con aspecto de consola](img/hangar-consola.png)
+
 **Cuatro cámaras**: a la vista (VLOS), FPV, seguimiento y cenital, con mapa y HUD.
 
 ![Vista cenital con mapa y datos de vuelo](img/cenital.png)

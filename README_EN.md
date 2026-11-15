@@ -78,6 +78,23 @@ A drone simulator that runs in the browser, with nothing to install and no inter
 
 ![Residential neighbourhood by day with shadows](img/graficos-barrio.png)
 
+**Living environment and believable crashes**
+- The **operator** stands next to the pad holding the transmitter and follows the drone with his eyes; in FPV he wears the goggles.
+- New models for people, seagulls and kites (articulated bodies, flapping and gliding, delta kites with bridle and ribbon tail).
+- **Landable rooftops and flat roofs** in every scenario: touching down gently on a building is a landing, not a crash.
+- **Ditching**: splash, ripples on the water, sound, and the drone sinks.
+- **Explosion**: an impact against the ground or a building above 12 m/s (≈43 km/h) destroys the aircraft: fireball, sparks, flying debris, smoke column and a scorch mark.
+- Every HUD **warning** is clickable: it explains what is happening and what to do, and lets you keep flying, restart or go back to the hangar.
+- **Console-style hangar**: dark, high-contrast, slightly retro configuration screens; the *Theme* button switches to the light look.
+
+![Operator with the transmitter next to the pad](img/operador.png)
+
+![Explosion on a high-speed impact](img/explosion.png)
+
+![Ditching: splash and ripples](img/amerizaje.png)
+
+![Console-style hangar](img/hangar-consola.png)
+
 **Four cameras**: line of sight (VLOS), FPV, chase and top-down, with map and HUD.
 
 ![Top-down view with map and flight data](img/cenital.png)
