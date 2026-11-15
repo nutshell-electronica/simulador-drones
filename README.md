@@ -83,6 +83,7 @@ Simulador de drones que funciona en el navegador, sin instalar nada y sin conexi
 - **Amerizaje**: salpicadura, ondas en el agua, sonido y el dron se hunde.
 - **Explosión**: un impacto contra el suelo o un edificio a más de 12 m/s (≈43 km/h) destruye la aeronave: bola de fuego, chispas, restos que salen despedidos, columna de humo y marca en el suelo.
 - Cada **aviso** del HUD es clicable: explica qué ocurre y qué hacer, y permite seguir, reiniciar o volver al hangar.
+- **Modo móvil**: en pantallas estrechas sólo se muestra una tira con los datos esenciales y los botones *Hangar* y *Pausa · datos*; al pausar se abre una capa con todos los paneles desplazable. Cada pestaña del hangar se desplaza a izquierda y derecha. Forzar con `?ui=mini` o `?ui=full`.
 - **Hangar con aspecto de consola**: pantallas de configuración oscuras de alto contraste, ligeramente retro; el botón *Tema* cambia al aspecto claro.
 
 ![Operador con la emisora junto a la plataforma](img/operador.png)
