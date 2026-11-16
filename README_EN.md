@@ -85,6 +85,10 @@ A drone simulator that runs in the browser, with nothing to install and no inter
 - **Ditching**: splash, ripples on the water, sound, and the drone sinks.
 - **Explosion**: an impact against the ground or a building above 12 m/s (≈43 km/h) destroys the aircraft: fireball, sparks, flying debris, smoke column and a scorch mark.
 - Every HUD **warning** is clickable: it explains what is happening and what to do, and lets you keep flying, restart or go back to the hangar.
+- **Power lines, phone masts and vehicles** (Scenario tab, 0–10 sliders like birds and kites): lattice pylons with sagging cables (collision with cable and pylon, airborne-obstacle warning, drawn on the map), phone masts with panels, dish, cabin and red beacon; cars, vans, buses, lorries and tractors driving along streets (city, neighbourhood) or tracks (elsewhere), seen by the obstacle sensors and with collision.
+
+![Power line](img/tendido-electrico.png)
+
 - **Mobile mode**: on narrow screens only a strip with the essential data and the *Hangar* and *Pause · data* buttons is shown; pausing opens a scrollable layer with every panel. Each hangar tab scrolls left and right. Force it with `?ui=mini` or `?ui=full`.
 - **Console-style hangar**: dark, high-contrast, slightly retro configuration screens; the *Theme* button switches to the light look.
 
