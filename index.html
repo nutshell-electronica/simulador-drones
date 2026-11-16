@@ -1045,7 +1045,7 @@ make({id:'dji-mavic4pro',maker:'DJI',name:'Mavic 4 Pro',type:'quad',mass:1.063,d
   est:['Hélice y motor equivalentes','Velocidad de guiñada'],
   src:[{t:'DJI Mavic 4 Pro · especificaciones (copia de la ficha de DJI en PDF de un distribuidor)',u:'https://www.cliftoncameras.co.uk/uploads/specifications/DJI%20Mavic%204%20Pro%20Specification.pdf'}]});
 
-make({id:'dji-avata2',maker:'DJI',name:'Avata 2 (FPV)',type:'quad',mass:0.377,dim:0.21,
+make({id:'dji-avata2',maker:'DJI',name:'Avata 2 (FPV)',type:'quad',mass:0.377,dim:0.21,fpvStab:true,
   cells:4,vc:3.69,Wh:31.7,battMass:0.145,chemName:'Li-ion 4S 2150 mAh',cr:15,
   prop:'3.5x3',twr:3.3,tilt:60,tiltV:42,vmax:19,vUp:9,vDn:9,yaw:300,wind:10.7,ceiling:5000,tHover:21,
   motorMass:0.02,builtin:['camfpv','rid'],esc:30,eu:'C1 · subcategoría A1',avW:2.5,
@@ -3676,6 +3676,7 @@ R3D.update=function(f,dt,opts){
   if(!drone||!world) return;
   var p=f.pos, ac=f.ac, T=f.t;
   drone.root.position.set(p.x,p.y+drone.lift,p.z);
+  drone.root.visible=(S.camMode!=='fpv')||f.status==='crashed';
   fireUpdate(f.status==='crashed'&&!!world.lava&&/lava/.test(f.crashMsg||''),p,dt,drone.dim);
   drone.root.rotation.set(-f.pitch,-f.yaw,-f.roll,'YXZ');
   /* siniestro: salpicadura y hundimiento (agua/lava) o explosión (impacto violento) */
@@ -3722,13 +3723,15 @@ R3D.update=function(f,dt,opts){
     var tgt=_v.set(p.x,p.y,p.z); cam.up.set(0,1,0); cam.lookAt(tgt);
     var d=Math.hypot(p.x-h.x,p.y-ey,p.z-h.z); cam.fov=opts.zoom>1?40/opts.zoom*1.0:55; cam.near=0.5;
   } else if(mode==='fpv'){
-    var ptilt=opts.gimbal?0:f.pitch, rtilt=opts.gimbal?0:f.roll;
-    cam.position.set(p.x+fx*dh*0.18,p.y+dh*0.12,p.z+fz*dh*0.18);
+    var ptilt=(opts.gimbal||opts.fpvStab)?0:f.pitch, rtilt=opts.gimbal?0:f.roll;
+    /* cámara en el morro, fuera del modelo; el propio dron no se dibuja en FPV */
+    cam.position.set(p.x+fx*dh*0.55,p.y+dh*0.10,p.z+fz*dh*0.55);
     cam.up.set(0,1,0);
     cam.rotation.order='YXZ';
     var tsx=f.ac.kind==='tailsitter'&&(f.tsMode==='toFw'||f.tsMode==='toVt'); if(tsx){ ptilt=0; } var up=(SM.fwNow(f)||tsx?0:S.uptilt)*deg;
     cam.rotation.set(-ptilt+(opts.gimbal?-0.12:up)*1.0,-f.yaw,-rtilt);
-    if(!SM.fwNow(f) && !tsx && !opts.gimbal) cam.rotation.x=-f.pitch+up;
+    if(!SM.fwNow(f) && !tsx && !opts.gimbal && !opts.fpvStab) cam.rotation.x=-f.pitch+up;
+    if(opts.fpvStab) cam.rotation.x=-0.03;   /* gimbal de 1 eje: horizonte estable en cabeceo (RockSteady); el alabeo sigue al dron */
     cam.fov=opts.gimbal?70:78; cam.near=0.1;
   } else if(mode==='chase'){
     var dd=Math.max(3.2,dh*5+2.5), tx=p.x-fx*dd, ty=p.y+dd*0.35, tz=p.z-fz*dd;
@@ -5116,7 +5119,7 @@ function drawWindInst(){
   g.textAlign='right'; g.fillStyle=wc.gust>0.3?'#ffd75e':'#7d93aa'; g.fillText('R +'+(wc.gust||0).toFixed(1),W-18,360);
 }
 var deg0=Math.PI/180, wsm={x:0,z:0};
-function ropts(){ return {trail:ST.trail, zoom:zoomV, gimbal:F&&F.ac.has('camhd')&&!F.ac.has('camfpv'), windX:F?F.wcur.x:0, windZ:F?F.wcur.z:0, topH:90}; }
+function ropts(){ return {trail:ST.trail, zoom:zoomV, gimbal:F&&F.ac.has('camhd')&&!F.ac.has('camfpv'), fpvStab:!!(F&&F.ac.cm&&F.ac.cm.fpvStab), windX:F?F.wcur.x:0, windZ:F?F.wcur.z:0, topH:90}; }
 
 function openHangar(){ hangarOpen=true; AUD.hush(); $('hangar').style.display='flex'; paused=true; syncPause(); SIM.validate(); $('bFly').textContent=(F&&sig===sigNow())?'Aplicar y continuar ▶':'Volar ▶'; }
 function closeHangar(){ hangarOpen=false; $('hangar').style.display='none'; }
