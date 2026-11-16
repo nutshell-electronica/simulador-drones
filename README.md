@@ -83,7 +83,7 @@ Simulador de drones que funciona en el navegador, sin instalar nada y sin conexi
 - **Amerizaje**: salpicadura, ondas en el agua, sonido y el dron se hunde.
 - **Explosión**: un impacto contra el suelo o un edificio a más de 12 m/s (≈43 km/h) destruye la aeronave: bola de fuego, chispas, restos que salen despedidos, columna de humo y marca en el suelo.
 - Cada **aviso** del HUD es clicable: explica qué ocurre y qué hacer, y permite seguir, reiniciar o volver al hangar.
-- **Tendidos eléctricos, torres de telefonía y vehículos** (pestaña Escenario, deslizadores 0–10 como las aves y cometas): torres de celosía con cables de catenaria (colisión con el cable y con la torre, aviso de obstáculo aéreo, trazado en el mapa), mástiles de telefonía con paneles, parábola, caseta y baliza roja; coches, furgonetas, autobuses, camiones y tractores que circulan por calles (ciudad, barrio) o caminos (resto), visibles para los sensores de obstáculos y con colisión.
+- **Tendidos eléctricos, torres de telefonía y vehículos** (pestaña Escenario, deslizadores 0–10 como las aves y cometas): torres de celosía con cables de catenaria (colisión con el cable y con la torre, aviso de obstáculo aéreo, trazado en el mapa), mástiles de telefonía con paneles, parábola, caseta y baliza roja; coches, furgonetas, autobuses, camiones y tractores que circulan por calles (ciudad, barrio) o caminos (resto), visibles para los sensores de obstáculos, con colisión y con aviso de sobrevuelo (normativa).
 
 ![Tendido eléctrico](img/tendido-electrico.png)
 

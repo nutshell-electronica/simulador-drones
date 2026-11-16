@@ -85,7 +85,7 @@ A drone simulator that runs in the browser, with nothing to install and no inter
 - **Ditching**: splash, ripples on the water, sound, and the drone sinks.
 - **Explosion**: an impact against the ground or a building above 12 m/s (≈43 km/h) destroys the aircraft: fireball, sparks, flying debris, smoke column and a scorch mark.
 - Every HUD **warning** is clickable: it explains what is happening and what to do, and lets you keep flying, restart or go back to the hangar.
-- **Power lines, phone masts and vehicles** (Scenario tab, 0–10 sliders like birds and kites): lattice pylons with sagging cables (collision with cable and pylon, airborne-obstacle warning, drawn on the map), phone masts with panels, dish, cabin and red beacon; cars, vans, buses, lorries and tractors driving along streets (city, neighbourhood) or tracks (elsewhere), seen by the obstacle sensors and with collision.
+- **Power lines, phone masts and vehicles** (Scenario tab, 0–10 sliders like birds and kites): lattice pylons with sagging cables (collision with cable and pylon, airborne-obstacle warning, drawn on the map), phone masts with panels, dish, cabin and red beacon; cars, vans, buses, lorries and tractors driving along streets (city, neighbourhood) or tracks (elsewhere), seen by the obstacle sensors, with collision and an overflight warning (regulations).
 
 ![Power line](img/tendido-electrico.png)
 
