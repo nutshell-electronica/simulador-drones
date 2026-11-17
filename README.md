@@ -92,7 +92,7 @@ Simulador de drones que funciona en el navegador, sin instalar nada y sin conexi
 
 ![Mando en el móvil](img/movil-mando.png)
 
-- **Hangar con aspecto de consola**: pantallas de configuración oscuras de alto contraste, ligeramente retro; el botón *Tema* cambia al aspecto claro.
+- **Tema oscuro (por defecto) y claro**: toda la interfaz (barra superior, botones, paneles, carteles, ayuda, instrumentos) comparte el aspecto oscuro de alto contraste, ligeramente retro; el botón *Tema* alterna con el claro.
 
 ![Operador con la emisora junto a la plataforma](img/operador.png)
 

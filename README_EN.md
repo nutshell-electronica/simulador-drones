@@ -90,7 +90,7 @@ A drone simulator that runs in the browser, with nothing to install and no inter
 ![Power line](img/tendido-electrico.png)
 
 - **Mobile mode**: on narrow screens only a strip with the essential data and the *Hangar* and *Pause · data* buttons is shown; pausing opens a scrollable layer with every panel. Each hangar tab scrolls left and right. Force it with `?ui=mini` or `?ui=full`.
-- **Console-style hangar**: dark, high-contrast, slightly retro configuration screens; the *Theme* button switches to the light look.
+- **Dark (default) and light theme**: the whole interface (top bar, buttons, panels, banners, help, instruments) shares the dark, high-contrast, slightly retro look; the *Theme* button switches to the light one.
 
 ![Operator with the transmitter next to the pad](img/operador.png)
 
