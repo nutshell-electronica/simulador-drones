@@ -1211,6 +1211,24 @@ SM.sunPos = function(ms,lat,lon){
   if(sz<1e-6) az=180; else { var c2=clamp((Math.sin(la)*Math.cos(zen)-Math.sin(decl))/(Math.cos(la)*sz),-1,1); var a=Math.acos(c2)/rad; az=ha>0?(a+180)%360:(540-a)%360; }
   return {az:az,el:90-zen/rad};
 };
+/* Coordenadas ecuatoriales → vector del mundo (x este, y arriba, z sur) para el instante ms y el lugar lat/lon */
+SM.eqVec = function(raDeg,decDeg,ms,lat,lon){
+  var rad=Math.PI/180, jd=ms/86400000+2440587.5;
+  var lst=(280.46061837+360.98564736629*(jd-2451545)+lon)*rad, ha=lst-raDeg*rad, d=decDeg*rad, f=lat*rad;
+  var E=-Math.cos(d)*Math.sin(ha), N=Math.sin(d)*Math.cos(f)-Math.cos(d)*Math.sin(f)*Math.cos(ha), U=Math.sin(d)*Math.sin(f)+Math.cos(d)*Math.cos(f)*Math.cos(ha);
+  return {x:E,y:U,z:-N,el:Math.asin(clamp(U,-1,1))/rad};
+};
+/* Luna (serie reducida, ~1° de error): vector del mundo y elevación. La fase se obtiene luego con el vector al Sol. */
+SM.moonPos = function(ms,lat,lon){
+  var rad=Math.PI/180, T=(ms/86400000+2440587.5-2451545)/36525, S=function(a){return Math.sin(a*rad);};
+  var lam=218.32+481267.881*T+6.29*S(135.0+477198.87*T)-1.27*S(259.3-413335.36*T)+0.66*S(235.7+890534.22*T)+0.21*S(269.9+954397.74*T)-0.19*S(357.5+35999.05*T)-0.11*S(186.5+966404.03*T);
+  var bet=5.13*S(93.3+483202.02*T)+0.28*S(228.2+960400.89*T)-0.28*S(318.3+6003.15*T)-0.17*S(217.6-407332.21*T);
+  var eps=23.439-0.0130042*T, l=lam*rad, b=bet*rad, e=eps*rad;
+  var ra=Math.atan2(Math.sin(l)*Math.cos(e)-Math.tan(b)*Math.sin(e),Math.cos(l)), dec=Math.asin(Math.sin(b)*Math.cos(e)+Math.cos(b)*Math.sin(e)*Math.sin(l));
+  return SM.eqVec(ra/rad,dec/rad,ms,lat,lon);
+};
+/* Vía Láctea: polo norte galáctico y centro galáctico en el mundo */
+SM.galVecs = function(ms,lat,lon){ return {pole:SM.eqVec(192.859,27.128,ms,lat,lon), gc:SM.eqVec(266.405,-28.936,ms,lat,lon)}; };
 /* Orto, mediodía solar y ocaso del día (ms) que contiene "ms" en la hora local del navegador */
 SM.sunTimes = function(ms,lat,lon){
   var d=new Date(ms), t0=new Date(d.getFullYear(),d.getMonth(),d.getDate(),0,0,0).getTime();
@@ -3427,7 +3445,7 @@ R3D.init=function(canvas){
   S.lightDir=new THREE.Vector3(-0.5,0.8,0.35).normalize(); S.shadowOn=false;
   /* cielo: degradado, sol, nubes procedurales y estrellas en un sombreador */
   S.skyU={uSun:{value:new THREE.Vector3(0,1,0)},uZen:{value:new THREE.Color(0x5f9fd6)},uHor:{value:new THREE.Color(0xd2e6f4)},uSunCol:{value:new THREE.Color(0xffffff)},uGround:{value:new THREE.Color(0x4a5140)},
-    uCloudLit:{value:new THREE.Color(0xffffff)},uCloudDark:{value:new THREE.Color(0x8a94a0)},uOc:{value:0},uNightK:{value:0},uT:GFX.uTime,uCov:{value:0.3},uWind:{value:new THREE.Vector2(0.004,0.002)},uDisc:{value:1}};
+    uCloudLit:{value:new THREE.Color(0xffffff)},uCloudDark:{value:new THREE.Color(0x8a94a0)},uOc:{value:0},uNightK:{value:0},uT:GFX.uTime,uCov:{value:0.3},uWind:{value:new THREE.Vector2(0.004,0.002)},uDisc:{value:1},uMoon:{value:new THREE.Vector3(0,-1,0)},uMoonE1:{value:new THREE.Vector3(1,0,0)},uMoonE2:{value:new THREE.Vector3(0,0,1)},uMoonK:{value:0},uMoonR:{value:0.02},uGal:{value:new THREE.Vector3(0,1,0)},uGC:{value:new THREE.Vector3(1,0,0)},uDark:{value:0},uMwK:{value:1}};
   S.sky=new THREE.Mesh(new THREE.SphereGeometry(5200,32,16),skyMat());
   S.sky.renderOrder=-10; S.sky.frustumCulled=false; S.scene.add(S.sky);
   S.sunSpr={visible:false,position:new THREE.Vector3(),material:{opacity:1}}; S.sunDir=new THREE.Vector3(0,1,0);
@@ -3451,7 +3469,7 @@ R3D.init=function(canvas){
 function skyMat(){
   return new THREE.ShaderMaterial({uniforms:S.skyU,side:THREE.BackSide,depthWrite:false,fog:false,defines:{CL_OCT:GFX.q.clouds},
     vertexShader:'varying vec3 vDir; void main(){ vDir=position; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }',
-    fragmentShader:['uniform vec3 uSun,uZen,uHor,uSunCol,uGround,uCloudLit,uCloudDark; uniform float uOc,uNightK,uT,uCov,uDisc; uniform vec2 uWind; varying vec3 vDir;',
+    fragmentShader:['uniform vec3 uSun,uZen,uHor,uSunCol,uGround,uCloudLit,uCloudDark; uniform vec3 uMoon,uMoonE1,uMoonE2,uGal,uGC; uniform float uOc,uNightK,uT,uCov,uDisc,uMoonK,uMoonR,uDark,uMwK; uniform vec2 uWind; varying vec3 vDir;',
     'float h21(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }',
     'float vn(vec2 p){ vec2 i=floor(p), f=fract(p); f=f*f*(3.0-2.0*f); return mix(mix(h21(i),h21(i+vec2(1.0,0.0)),f.x),mix(h21(i+vec2(0.0,1.0)),h21(i+vec2(1.0,1.0)),f.x),f.y); }',
     '#if CL_OCT > 0',
@@ -3461,7 +3479,24 @@ function skyMat(){
     ' float sd=max(dot(d,uSun),0.0); float vis=1.0-uOc*0.85; float up=step(-0.03,uSun.y);',
     ' col+=uSunCol*(pow(sd,8.0)*0.10+pow(sd,48.0)*0.22+pow(sd,400.0)*0.7)*vis*up;',
     ' col+=uSunCol*smoothstep(0.99955,0.9998,sd)*30.0*vis*up*uDisc;',
-    ' float st=step(0.9987,h21(floor(d.xz/(abs(d.y)+0.3)*230.0)))*uNightK*smoothstep(0.04,0.3,d.y); col+=vec3(st)*0.9*(1.0-uOc);',
+    ' vec2 sq=d.xz/(abs(d.y)+0.3)*230.0; vec2 sc=floor(sq); float sr=h21(sc); float st=step(mix(0.9987,0.9962,uDark),sr)*(0.45+0.55*h21(sc+7.7))*smoothstep(0.5,0.12,length(fract(sq)-0.5))*uNightK*smoothstep(0.04,0.3,d.y); col+=vec3(st)*0.9*(1.0-uOc);',
+    ' if(uDark>0.01&&uNightK>0.5){ vec2 q2=d.xz/(abs(d.y)+0.3)*520.0; vec2 s2=floor(q2); float st2=step(0.9935,h21(s2+3.1))*(0.3+0.5*h21(s2+1.3))*smoothstep(0.5,0.12,length(fract(q2)-0.5))*smoothstep(0.03,0.25,d.y); col+=vec3(0.8,0.85,1.0)*st2*uDark*(1.0-uOc)*(1.0-0.7*uMoonK); }',
+    ' if(uDark>0.01&&uNightK>0.5){ float b=dot(d,uGal); vec3 ex=uGC; vec3 ey=cross(uGal,uGC); float lon=atan(dot(d,ey),dot(d,ex));',
+    '  float band=exp(-pow(b/0.17,2.0)); float bulge=exp(-pow(lon/0.95,2.0))*exp(-pow(b/0.40,2.0));',
+    '  float nz=vn(vec2(lon*5.0,b*16.0))*0.55+vn(vec2(lon*13.0,b*38.0))*0.3+vn(vec2(lon*31.0,b*90.0))*0.15;',
+    '  float lane=exp(-pow((b-0.03*sin(lon*2.0))/0.035,2.0))*smoothstep(0.35,0.75,vn(vec2(lon*4.0+3.0,1.7)));',
+    '  float lum=band*(0.35+0.9*nz)*(0.55+1.3*bulge)-lane*0.45*band; lum=max(lum,0.0);',
+    '  vec3 mc=mix(vec3(0.50,0.58,0.82),vec3(1.0,0.84,0.62),clamp(bulge*1.3,0.0,1.0));',
+    '  float fine=step(0.975,h21(floor(d.xz/(abs(d.y)+0.3)*900.0)+9.0))*band*0.8;',
+    '  col+=(mc*lum*0.17+vec3(fine)*0.5)*uDark*(1.0-uOc)*smoothstep(0.0,0.18,d.y)*(1.0-0.85*uMoonK); }',
+    ' if(uMoonK>0.001){ float md=dot(d,uMoon); if(md>0.97){ float x=dot(d,uMoonE1)/uMoonR, y=dot(d,uMoonE2)/uMoonR, rr=x*x+y*y;',
+    '  float dayk=1.0-uNightK; float vv=uMoonK*(1.0-uOc*0.92);',
+    '  if(rr<1.0){ float z=sqrt(1.0-rr); vec3 n=uMoonE1*x+uMoonE2*y-uMoon*z; float lit=smoothstep(-0.05,0.07,dot(n,uSun));',
+    '   float tex=0.78+0.34*(vn(vec2(x,y)*6.0+4.0)-0.5)+0.55*(vn(vec2(x,y)*2.3+9.0)-0.5); tex=clamp(tex,0.35,1.15);',
+    '   vec3 mcol=vec3(0.96,0.93,0.85)*tex*(lit*1.15+0.03*uNightK); float al=smoothstep(1.0,0.93,rr)*vv*(lit+0.05*uNightK+0.0);',
+    '   col=mix(col,mcol*mix(1.7,1.0,dayk*0.5),clamp(al,0.0,1.0)); }',
+    '  col+=vec3(0.55,0.62,0.85)*pow(md,mix(3000.0,700.0,uNightK))*0.35*uMoonK*uNightK*(1.0-uOc); } }',
+
     '#if CL_OCT > 0',
     ' if(d.y>0.01){ vec2 p=d.xz/(d.y+0.12)*1.5+uWind*uT; float n=fbm(p); float th=mix(0.60,0.27,uCov); float a=smoothstep(th,th+0.2,n);',
     '  float n2=fbm(p+uSun.xz*0.22); float sh=clamp(0.6+(n-n2)*3.2,0.0,1.0); vec3 cc=mix(uCloudDark,uCloudLit,sh)+uSunCol*pow(sd,10.0)*0.22*vis*up;',
@@ -3715,6 +3750,17 @@ R3D.setWeather=function(wx,tod,sun){
   S.shadowOn=GFX.q.shadow>0&&sel>3&&oc<0.8&&!(world&&world.indoor); if(world&&world.indoor){ S.hemi.intensity*=1.6; } if(S.sun.castShadow!==S.shadowOn){ S.sun.castShadow=S.shadowOn; }
   if(wx.vis<1) hz.lerp(new THREE.Color(tod==='noche'?0x1a2028:0xdfe3e6),0.9);
   var U=S.skyU, nt=tod==='noche', at=tod==='atardecer';
+  var dk=(world&&['campo','bosque','montana','costa'].indexOf(world.id)>=0&&!world.indoor)?1:0;
+  if(nt&&dk){ hz.setHex(0x0a1322); zn.setHex(0x02040a); hz.lerp(new THREE.Color(0x20262e),oc*0.7); S.hemi.intensity*=0.8; }
+  var tms=(world&&world.timeMs0)||Date.now(), lat=(typeof ST!=='undefined'&&ST.lat!=null)?ST.lat:36.77, lon=(typeof ST!=='undefined'&&ST.lon!=null)?ST.lon:-4.39;
+  var mp=SM.moonPos(tms,lat,lon), mv=new THREE.Vector3(mp.x,mp.y,mp.z).normalize(), upv=new THREE.Vector3(0,1,0);
+  var e1=new THREE.Vector3().crossVectors(mv,upv); if(e1.lengthSq()<1e-6) e1.set(1,0,0); e1.normalize(); var e2=new THREE.Vector3().crossVectors(e1,mv).normalize();
+  var illum=(1-mv.dot(S.sunDir))/2*0+0.5*(1+(-mv.dot(S.sunDir))); /* fracción iluminada: 1 = llena */
+  U.uMoon.value.copy(mv); U.uMoonE1.value.copy(e1); U.uMoonE2.value.copy(e2);
+  var mk=clamp((mp.el+2)/6,0,1); U.uMoonK.value=mk; S.moonEl=mp.el; S.moonIllum=illum;
+  var gv=SM.galVecs(tms,lat,lon); U.uGal.value.set(gv.pole.x,gv.pole.y,gv.pole.z).normalize(); U.uGC.value.set(gv.gc.x,gv.gc.y,gv.gc.z).normalize();
+  U.uDark.value=(nt&&dk)?1:0;
+  if(nt){ S.hemi.intensity+=0.10*mk*illum*HEMK; }
   U.uSun.value.copy(S.sunDir); U.uZen.value.copy(zn); U.uHor.value.copy(hz); U.uSunCol.value.setHex(nt?0x000000:(at?0xffb070:(sel<22?0xffe8c8:0xfff6e8))); U.uOc.value=oc; U.uNightK.value=nt?1:0;
   U.uCov.value=clamp(0.3+oc*0.8,0,1); var wd=(wx.dir||0)*deg, wk=0.0025+(wx.speed||wx.wind||0)*0.0007; U.uWind.value.set(Math.sin(wd)*wk,-Math.cos(wd)*wk);
   U.uGround.value.setHex(gc).multiplyScalar(nt?0.5:0.8);

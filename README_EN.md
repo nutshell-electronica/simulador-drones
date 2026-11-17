@@ -168,3 +168,5 @@ Author: José Luis Guerrero Marín.
 Uses [three.js](https://threejs.org/) (MIT licence), included in the file.
 
 Bundled libraries (MIT): three.js, PeerJS and qrcode-generator.
+
+**Night sky**: the Moon shows its real phase and position for the chosen date and time; in open field, forest, mountain and coast scenarios the sky is very dark, with more stars and the Milky Way.

@@ -170,3 +170,5 @@ Autoría: José Luis Guerrero Marín.
 Usa [three.js](https://threejs.org/) (licencia MIT), incluido en el archivo.
 
 Bibliotecas incluidas (licencia MIT): three.js, PeerJS y qrcode-generator.
+
+**Cielo nocturno**: la Luna aparece en su fase y posición reales según la fecha y la hora elegidas; en campo abierto, bosque, montaña y costa el cielo es muy oscuro, con más estrellas y la Vía Láctea.
