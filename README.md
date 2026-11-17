@@ -88,6 +88,10 @@ Simulador de drones que funciona en el navegador, sin instalar nada y sin conexi
 ![Tendido eléctrico](img/tendido-electrico.png)
 
 - **Modo móvil**: en pantallas estrechas sólo se muestra una tira con los datos esenciales y los botones *Hangar* y *Pausa · datos*; al pausar se abre una capa con todos los paneles desplazable. Cada pestaña del hangar se desplaza a izquierda y derecha. Forzar con `?ui=mini` o `?ui=full`.
+- **Móvil como mando (en pruebas)**: el botón *Usar móvil como mando* del hangar muestra un código QR; al escanearlo, el móvil (en horizontal) se convierte en un mando con dos joysticks flotantes, *Pausa* y *Hangar* (este último, con pulsación larga). El ordenador sigue mostrando exactamente lo mismo; sólo aparece una etiqueta «Mando móvil activo». Si el móvil deja de enviar durante 0,6 s, los mandos vuelven a cero, y una emisora real conectada tiene prioridad. Usa WebRTC directo entre los dos aparatos; sólo el apretón de manos inicial pasa por el servidor público de PeerJS (con `?peerhost=…&peerport=…&peerpath=…&peersecure=0|1` se puede usar uno propio).
+
+![Mando en el móvil](img/movil-mando.png)
+
 - **Hangar con aspecto de consola**: pantallas de configuración oscuras de alto contraste, ligeramente retro; el botón *Tema* cambia al aspecto claro.
 
 ![Operador con la emisora junto a la plataforma](img/operador.png)
@@ -136,6 +140,7 @@ Simulador de drones que funciona en el navegador, sin instalar nada y sin conexi
 |---|---|
 | Teclado | W/S altura · A/D giro · flechas desplazamiento · Espacio pausa · C cámara · H regreso a casa · Q GPS/ATTI · F1 ayuda |
 | Táctil | Palancas en pantalla (móvil o tableta) |
+| Móvil como mando | Botón del hangar → QR → joysticks, pausa y hangar en el móvil (prototipo; todavía sin sensores de inclinación) |
 | **Emisora real** | Cualquier radio que el navegador vea como mando (cable USB en modo *Joystick HID*, cable de simulador o dongle). Perfiles AETR, TAER y mando de consola (modos 1–4), con detección automática de ejes e interruptores. Incluye guía para RadioMaster TX16S con dongle Spektrum |
 
 ## Uso en el aula
@@ -152,6 +157,8 @@ Simulador de drones que funciona en el navegador, sin instalar nada y sin conexi
 - En los modelos comerciales, el motor y la hélice equivalentes están estimados (el fabricante no los publica); masa, autonomía y velocidades se ajustan a la ficha.
 - La emisora real se ha probado con una radio EdgeTX por cable y de forma inalámbrica con el dongle (Spektrum): el stick derecho responde al instante. Conviene revisar ejes e inversiones con cada radio.
 
+- Móvil como mando: necesita internet en los dos aparatos y que la red no aísle los dispositivos ni bloquee el servidor de enlace; no se ha probado aún en la red de un centro. Sólo usa los joysticks táctiles; la inclinación del móvil no se aprovecha todavía.
+
 ## Archivos
 
 - `index.html` — el simulador (autocontenido).
@@ -161,3 +168,5 @@ Simulador de drones que funciona en el navegador, sin instalar nada y sin conexi
 
 Autoría: José Luis Guerrero Marín.
 Usa [three.js](https://threejs.org/) (licencia MIT), incluido en el archivo.
+
+Bibliotecas incluidas (licencia MIT): three.js, PeerJS y qrcode-generator.

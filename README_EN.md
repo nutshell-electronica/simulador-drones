@@ -138,6 +138,7 @@ A drone simulator that runs in the browser, with nothing to install and no inter
 |---|---|
 | Keyboard | W/S altitude · A/D yaw · arrow keys move · Space pause · C camera · H return home · Q GPS/ATTI · V tail-sitter phase · F1 help |
 | Touch | On-screen sticks (phone or tablet) |
+| Phone as controller | Hangar button → QR → joysticks, pause and hangar on the phone (prototype; no tilt sensors yet) |
 | **Real transmitter** | Any radio the browser sees as a gamepad (USB cable in *Joystick HID* mode, simulator cable or dongle). AETR and TAER profiles and console gamepad (modes 1–4), with automatic axis and switch detection. Includes a guide for the RadioMaster TX16S with a Spektrum dongle |
 
 ## Classroom use
@@ -154,6 +155,8 @@ A drone simulator that runs in the browser, with nothing to install and no inter
 - For commercial models, the equivalent motor and propeller are estimated (the manufacturer does not publish them); mass, endurance and speeds are fitted to the data sheet.
 - The real transmitter has been tested with an EdgeTX radio over cable and wirelessly through the dongle (Spektrum): the right stick responds instantly. Check axes and reversals with each radio.
 
+- Phone as controller (testing): the *Use phone as controller* button in the hangar shows a QR code; scanned, the phone (in landscape) becomes a controller with two floating joysticks, *Pause* and *Hangar* (long press). The computer view is unchanged apart from a small «Phone controller active» chip. If the phone stops sending for 0.6 s the controls return to zero; a real transmitter takes priority. It needs internet on both devices and a network that neither isolates devices nor blocks the link server (public PeerJS broker by default; `?peerhost=…&peerport=…&peerpath=…&peersecure=0|1` selects your own). Only the touch joysticks are used; tilt is not used yet.
+
 ## Files
 
 - `index.html` — the simulator (self-contained).
@@ -163,3 +166,5 @@ A drone simulator that runs in the browser, with nothing to install and no inter
 
 Author: José Luis Guerrero Marín.
 Uses [three.js](https://threejs.org/) (MIT licence), included in the file.
+
+Bundled libraries (MIT): three.js, PeerJS and qrcode-generator.
