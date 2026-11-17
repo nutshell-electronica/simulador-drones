@@ -3772,6 +3772,30 @@ function fireUpdate(on,p,dt,size){
 }
 /* actualización por fotograma */
 var _v=new THREE.Vector3(), _q=new THREE.Euler();
+/* ---------- paracaídas: campana naranja/blanca con líneas, se despliega al abrirse y se desinfla al tocar suelo ---------- */
+function chuteBuild(){
+  var R=Math.max(0.55,drone.dim*drone.vk*1.15), L=R*2.3, g=new THREE.Group(), N=12;
+  var sph=new THREE.SphereGeometry(R,N*2,8,0,Math.PI*2,0,Math.PI/2*0.96), pos=sph.attributes.position, col=new Float32Array(pos.count*3), c1=new THREE.Color(0xe8671b), c2=new THREE.Color(0xf4f1ea);
+  for(var i=0;i<pos.count;i++){ var an=Math.atan2(pos.getZ(i),pos.getX(i)); var sec=Math.floor(((an+Math.PI)/(Math.PI*2))*N)%2; var c=sec?c1:c2; col[i*3]=c.r; col[i*3+1]=c.g; col[i*3+2]=c.b; }
+  sph.setAttribute('color',new THREE.BufferAttribute(col,3)); sph.scale(1,0.62,1);
+  var can=new THREE.Mesh(sph,new THREE.MeshStandardMaterial({vertexColors:true,roughness:0.85,metalness:0,side:THREE.DoubleSide})); can.position.y=L; can.castShadow=true; g.add(can);
+  var lp=[]; for(var k=0;k<8;k++){ var a=k/8*Math.PI*2; lp.push(Math.cos(a)*R*0.96,L+0.05*R,Math.sin(a)*R*0.96, 0,0.02,0); }
+  var ln=new THREE.LineSegments(new THREE.BufferGeometry().setAttribute('position',new THREE.Float32BufferAttribute(lp,3)),new THREE.LineBasicMaterial({color:0xdfe6ea})); g.add(ln);
+  g.userData={d:drone,R:R,L:L}; g.visible=false; S.scene.add(g); return g;
+}
+function chuteUpdate(f,p,dt,T){
+  if(S.chute&&S.chute.userData.d!==drone){ S.scene.remove(S.chute); S.chute=null; }
+  if(!f.chuteOpen){ if(S.chute){ S.chute.visible=false; } S.chT=0; S.chCol=0; return; }
+  if(!S.chute) S.chute=chuteBuild();
+  var g=S.chute; S.chT=(S.chT||0)+dt;
+  var gh=world.floorH(p.x,p.y,p.z), low=(p.y-gh)<0.5||f.status==='ground'||f.status==='landed';
+  S.chCol=low?(S.chCol||0)+dt:0;
+  var op=Math.min(1,S.chT/0.9), e=op*op*(3-2*op), cl=Math.min(1,S.chCol/1.6);
+  var sw=Math.sin(T*1.7)*0.07*(1-cl), sw2=Math.sin(T*1.3+1)*0.05*(1-cl);
+  g.visible=true; g.position.set(p.x,p.y+drone.lift,p.z);
+  g.rotation.set(sw2,0,sw);
+  g.scale.set(Math.max(0.05,e*(1+0.35*cl)),Math.max(0.04,e*(1-0.9*cl)),Math.max(0.05,e*(1+0.35*cl)));
+}
 R3D.update=function(f,dt,opts){
   if(!drone||!world) return;
   var p=f.pos, ac=f.ac, T=f.t;
@@ -3788,6 +3812,7 @@ R3D.update=function(f,dt,opts){
     if(cf.kind==='water'||cf.kind==='lava'){ var sk=FX3.sink(cf.t,cf.kind==='lava'?0.12:0.45); drone.root.position.y=cf.y+drone.lift+sk; drone.root.rotation.x+=Math.min(0.9,cf.t*0.25); drone.root.rotation.z+=Math.min(0.5,cf.t*0.12); drone.root.visible=sk>-2.1; }
   } else if(S.crashFx){ S.crashFx=null; FX3.clear(); drone.root.visible=true; }
   FX3.update(dt);
+  chuteUpdate(f,p,dt,T);
   if(ac.kind==='tailsitter'){ var ex=f.tsFw?0:Math.PI/2; drone.body.rotation.x=ex; var el=ex-f.pitch; drone.body.position.y=drone.legL*Math.max(0,Math.sin(el)); }
   /* hélices */
   var vis=(f.status==='flying'||f.status==='rolling'||f.status==='ground'&&f.Tcur>1)&&f.status!=='crashed';
