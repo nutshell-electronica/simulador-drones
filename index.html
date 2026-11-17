@@ -3776,7 +3776,12 @@ R3D.update=function(f,dt,opts){
   var cam=S.cam, mode=S.camMode, dh=drone.dim*drone.vk;
   var fx=Math.sin(f.yaw), fz=-Math.cos(f.yaw);
   if(mode==='vlos'){
-    var h=world.home, ey=world.homeY+1.75; cam.position.set(h.x+0.0,ey,h.z+1.5);
+    /* la cámara se coloca DETRÁS del dron según su rumbo inicial (antes siempre al sur, aunque el rumbo no fuera norte)
+       y siempre por detrás del operador, para que ni el dron quede encima ni las manos del operador queden dentro del plano cercano */
+    var h=world.home, ey=world.homeY+1.75, h0=(world.startHeading||0)*deg, f0x=Math.sin(h0), f0z=-Math.cos(h0), back=3.8, op=S.act&&S.act.oper;
+    if(op){ var ob=-((op.per.x-h.x)*f0x+(op.per.z-h.z)*f0z); if(ob>0) back=Math.max(back,ob+2.2); }
+    cam.position.set(h.x-f0x*back,ey,h.z-f0z*back);
+    S.vlosBack=back;
     var tgt=_v.set(p.x,p.y,p.z); cam.up.set(0,1,0); cam.lookAt(tgt);
     var d=Math.hypot(p.x-h.x,p.y-ey,p.z-h.z); cam.fov=opts.zoom>1?40/opts.zoom*1.0:55; cam.near=0.5;
   } else if(mode==='fpv'){
@@ -3805,7 +3810,7 @@ R3D.update=function(f,dt,opts){
   }
   /* baliza de localización: anillo naranja cuando el dron se ve demasiado pequeño */
   if(S.beacon){ var bd=Math.max(1,cam.position.distanceTo(_v.set(p.x,p.y,p.z))), bsz=drone.dim*drone.vk;
-    var ang=bsz/bd*(55/Math.max(20,cam.fov)), need=mode!=='fpv'&&(ang<0.02||(f.status==='ground'&&mode==='vlos'&&ang<0.12))&&f.status!=='crashed';
+    var ang=bsz/bd*(55/Math.max(20,cam.fov)), need=mode!=='fpv'&&(ang<0.02||(f.status==='ground'&&mode==='vlos'&&ang<0.12*(1.5/(S.vlosBack||1.5))))&&f.status!=='crashed';
     S.beacon.visible=need; if(need){ S.beacon.position.set(p.x,p.y+drone.lift,p.z); var ks=Math.max(bsz*2,bd*0.045); S.beacon.scale.set(ks,ks,1); S.beacon.material.opacity=clamp((0.02-ang)/0.012,0.25,1)*(0.75+0.25*Math.sin(T*5)); } }
   cam.updateProjectionMatrix();
   S.sky.position.copy(cam.position);
