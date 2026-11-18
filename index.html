@@ -122,7 +122,12 @@ kbd{font-family:var(--mono);font-size:10.5px;border:1px solid var(--line2);borde
 #msg{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%);text-align:center;display:none;background:rgba(251,252,253,.96);border:2px solid var(--ink);padding:16px 26px;max-width:520px}
 #msg h2{font-size:20px;letter-spacing:.14em;margin-bottom:4px} #msg.crash h2{color:var(--red)} #msg.ok h2{color:var(--green)}
 #msg p{margin:6px 0 10px;color:var(--ink2)}
-#alerts .al{pointer-events:auto;cursor:pointer;user-select:none} .alq{opacity:.7;font-weight:400;margin-left:4px}
+#alerts2{position:absolute;left:430px;top:100px;display:flex;flex-direction:column;gap:3px;align-items:flex-start;width:230px;pointer-events:none}
+#alerts2 .al{font-size:10.5px;padding:2px 8px;letter-spacing:.02em;line-height:1.25}
+.mini #alerts2{left:6px;width:52%;top:200px} .mini #alerts2 .al{font-size:9.5px;padding:2px 5px}
+.mini #alerts .al{font-size:10.5px;padding:3px 8px}
+.mini #touch .tbar{left:1%!important;transform:none!important;width:98%;max-width:98%!important;gap:3px;bottom:150px} .mini #touch .tbar button{font-size:10px;padding:5px 5px;min-height:32px}
+#alerts2 .al,#alerts .al{pointer-events:auto;cursor:pointer;user-select:none} .alq{opacity:.7;font-weight:400;margin-left:4px}
 #alDlg{position:absolute;left:50%;top:36%;transform:translate(-50%,-50%);display:none;background:rgba(251,252,253,.98);border:2px solid var(--ink);padding:16px 22px;width:480px;max-width:90%;z-index:30}
 #alDlg h2{font-size:16px;letter-spacing:.08em;margin-bottom:8px} #alDlg.c h2{color:var(--red)} #alDlg.w h2{color:#8a5500} #alDlg.i h2{color:var(--blue)}
 #alDlg .alw{margin:6px 0 12px;color:var(--ink2);line-height:1.45;font-size:13px} #alDlg .alw b{color:var(--ink)}
@@ -422,7 +427,7 @@ html.dark #map{filter:brightness(.8) contrast(1.05)}
   <div id="osd"></div>
   <canvas id="windInst" width="320" height="400"></canvas>
   <div id="chips"></div>
-  <div id="alerts"></div>
+  <div id="alerts"></div><div id="alerts2"></div>
   <div id="mini"><div class="mc" id="miniCells"></div><div class="mb"><button class="btn" id="miniHangar">Hangar</button><button class="btn pri" id="miniPause">Pausa · datos</button></div></div>
   <div id="more"><div class="mh"><b>Datos de vuelo</b><span class="sp"></span><button class="btn" id="moreHangar">Hangar</button><button class="btn pri" id="moreResume">Reanudar ▶</button></div><div class="mi" id="moreIn"></div></div>
   <div id="compHud" class="panel"></div>
@@ -5946,10 +5951,14 @@ H.alertClick=function(txt,lv){
 };
 H.alertClose=function(resume){ var dlg=$('alDlg'); dlg.style.display='none'; if(resume!==false && !dlg._wasPaused && !H.ctl.hangarOpen()) H.ctl.setPaused(false); };
 H.renderAlerts=function(A){
-  var c=$('alerts'), order={c:0,w:1,i:2}; A.sort(function(x,y){return order[x.l]-order[y.l];});
-  var html=A.slice(0,6).map(function(x){return '<div class="al '+x.l+'" data-l="'+x.l+'" title="Pulsa para ver qué ocurre y qué hacer">'+x.t+' <span class="alq">ⓘ</span></div>';}).join('');
-  if(c._h!==html){ c.innerHTML=html; c._h=html; }
-  if(!c._bound){ c._bound=true; c.addEventListener('pointerdown',function(e){ var el=e.target.closest&&e.target.closest('.al'); if(!el) return; e.preventDefault(); var t=I18N.es(el).replace(/\s*ⓘ\s*$/,''); H.alertClick(t,el.getAttribute('data-l')); }); }
+  var order={c:0,w:1,i:2}; A.sort(function(x,y){return order[x.l]-order[y.l];});
+  function mk(L){ return L.slice(0,6).map(function(x){return '<div class="al '+x.l+'" data-l="'+x.l+'" title="Pulsa para ver qué ocurre y qué hacer">'+x.t+' <span class="alq">ⓘ</span></div>';}).join(''); }
+  /* en el centro sólo los críticos; el resto, a un lado y más pequeños */
+  [['alerts',A.filter(function(x){return x.l==='c';})],['alerts2',A.filter(function(x){return x.l!=='c';})]].forEach(function(p){
+    var c=$(p[0]), html=mk(p[1]); if(!c) return;
+    if(c._h!==html){ c.innerHTML=html; c._h=html; }
+    if(!c._bound){ c._bound=true; c.addEventListener('pointerdown',function(e){ var el=e.target.closest&&e.target.closest('.al'); if(!el) return; e.preventDefault(); var t=I18N.es(el).replace(/\s*ⓘ\s*$/,''); H.alertClick(t,el.getAttribute('data-l')); }); }
+  });
 };
 
 /* ---------- normativa ---------- */
@@ -6541,7 +6550,7 @@ function chips(d){
   if(speed!==1) s.push('<span class="chip">Sim <b>×'+speed+'</b></span>');
   if(paused) s.push('<span class="chip p"><b>⏸ PAUSA</b> · t='+F.t.toFixed(1)+' s</span>');
   var c=$('chips'), h=s.join(''); if(c._h!==h){ c.innerHTML=h; c._h=h; }
-  var ch=c.offsetHeight; if(ch&&c._ah!==ch){ c._ah=ch; if(!MINI) $('alerts').style.top=(c.offsetTop+ch+8)+'px'; }
+  var ch=c.offsetHeight; if(ch&&c._ah!==ch){ c._ah=ch; $('alerts').style.top=(c.offsetTop+ch+8)+'px'; $('alerts2').style.top=(c.offsetTop+ch+8)+'px'; }
 }
 
 /* ---------- bucle principal ---------- */
