@@ -4,7 +4,7 @@
 
 > 🌐 [English version → README_EN.md](README_EN.md)
 
-Simulador de drones que funciona en el navegador, sin instalar nada y sin conexión a internet. Está pensado para **aprender cómo se comporta un dron y por qué**: no solo se vuela, también se ven la potencia, la batería, el viento, la señal de radio, el GNSS y la normativa europea mientras ocurre.
+Simulador de drones que funciona en el navegador, sin instalar nada y sin conexión a internet. Está pensado para **aprender cómo se comporta un dron y por qué**: no solo se vuela, también se ven la potencia, la batería, el viento, la señal de radio, el GNSS y la normativa europea mientras ocurre. Incluye lugares reconocibles de Málaga, tres escenarios de fantasía (uno de ellos **en Marte**), cielo nocturno con Luna y Vía Láctea y la posibilidad de volar con una emisora real o con el móvil.
 
 ![Hangar: elección de aeronave y ficha del fabricante](img/hangar.png)
 
@@ -13,7 +13,7 @@ Simulador de drones que funciona en el navegador, sin instalar nada y sin conexi
 **Diseñar la aeronave (Hangar)**
 - Cuadricóptero, tricóptero, hexacóptero, octocóptero, helicóptero y ala fija.
 - Elegir bastidor, motor, hélice, ESC, batería (tecnología, celdas y capacidad), cámara FPV, GNSS, telémetros, LiDAR, paracaídas y carga útil. El simulador calcula empuje, relación empuje/peso, gas en estacionario, autonomía y corriente, y avisa de combinaciones peligrosas.
-- **Drones comerciales con ficha del fabricante**: Tello, DJI Mini 4 Pro, Mini 5 Pro, Air 3S, Mavic 4 Pro, Avata 2, Matrice 350 RTK y eBee X (ala fija). Se cargan con los datos publicados y no se pueden modificar (salvo la carga útil del Matrice 350 RTK). Cada ficha indica qué es dato del fabricante, qué es estimado y de dónde sale.
+- **Drones comerciales con ficha del fabricante**: Tello, DJI Mini 4 Pro, Mini 5 Pro, Air 3S, Mavic 4 Pro, Avata 2, Matrice 350 RTK y eBee X (ala fija), además del **Ingenuity** de la NASA (sólo en Marte). Se cargan con los datos publicados y no se pueden modificar (salvo la carga útil del Matrice 350 RTK). Cada ficha indica qué es dato del fabricante, qué es estimado y de dónde sale.
 
 **Volar en condiciones realistas**
 - Física de empuje, batería, viento (rachas y turbulencia), densidad del aire y temperatura.
@@ -32,17 +32,31 @@ Simulador de drones que funciona en el navegador, sin instalar nada y sin conexi
 - **Lugares reconocibles de Málaga** (maquetas simplificadas, con las coordenadas GPS de partida correspondientes):
   - **Puerto de Málaga · Muelle Uno**, con La Farola al fondo, yates, un crucero, el Cubo del Pompidou, el Palmeral, la Catedral y Gibralfaro.
   - **Guadalhorce · pasarela de madera** del Paraje Natural, con río, lagunas, dunas y pinar del Arraijanal, el mar al sur y la zona UAS del aeropuerto al oeste.
-- **Escenarios de fantasía** (estilizados, con nombres propios):
-  - **Tierra de cubos**: mundo de bloques de 24 m con llanuras, colinas y montañas nevadas, ríos y un lago, árboles cuadrados, una aldea, una pirámide escalonada, pilares de piedra y bloques flotantes. El terreno sube en escalones y el agua es amerizaje.
-  - **Fortaleza de lava**: castillo oscuro con torreón central, torreones de esquina, murallas almenadas y puerta con puente sobre un foso de lava, rodeado de ríos y lagos de lava. Caer a la lava es siniestro total.
-  - **Marte · cráter Jezero** (cinta «FANTASÍA» en la tarjeta): llanura rojiza con cráteres, rocas, dunas, tres bases marcianas, rovers y hombrecillos verdes. Aire ~100 veces menos denso y gravedad 3,71 m/s², por lo que **sólo vale el helicóptero Ingenuity de la NASA** (ningún otro dron vuela allí y el Ingenuity no vuela en la Tierra). Sin nubes, cielo oscuro y estrellado, polvo rojo, tormentas de polvo, torbellinos, Fobos, puestas de Sol azules y estrellas fugaces de noche. Sin GNSS ni RTH: se mantiene con flujo óptico hasta 40 m. Un deslizador «Energía de la batería (fantasía)» (×1 a ×3, sin más masa) permite volar hasta ~10 minutos aunque no sea realista.
 - En interior, sensores ToF, LiDAR 2D y flujo óptico.
-
-![Escenarios disponibles](img/escenarios.png)
 
 ![Muelle Uno de Málaga con La Farola al fondo](img/muelle-farola.png)
 
 ![Pasarela de madera del Guadalhorce](img/guadalhorce-pasarela.png)
+
+**Escenarios de fantasía** (marcados con una cinta inclinada «FANTASÍA» en la tarjeta del escenario; estilizados, con nombres propios):
+- **Tierra de cubos**: mundo de bloques de 24 m con llanuras, colinas y montañas nevadas, ríos y un lago, árboles cuadrados, una aldea, una pirámide escalonada, pilares de piedra y bloques flotantes. El terreno sube en escalones y el agua es amerizaje.
+- **Fortaleza de lava**: castillo oscuro con torreón central, torreones de esquina, murallas almenadas y puerta con puente sobre un foso de lava, rodeado de ríos y lagos de lava. Caer a la lava es siniestro total.
+- **Marte · cráter Jezero**: llanura rojiza con cráteres, rocas, dunas, tres bases marcianas, rovers y hombrecillos verdes. El aire es unas 100 veces menos denso y la gravedad es de 3,71 m/s², así que **sólo vale el helicóptero Ingenuity de la NASA** (ningún otro dron vuela allí, y el Ingenuity no vuela en la Tierra).
+  - Sin nubes, cielo muy oscuro con estrellas y Vía Láctea, polvo rojo, torbellinos y tormentas de polvo, Fobos y estrellas fugaces de noche. Las puestas de Sol tienen el halo **azul** propio de Marte.
+  - Sin GNSS ni RTH: el Ingenuity se mantiene con flujo óptico hasta 40 m. Tiene cuatro meteos marcianas y un panel de normativa propio (no aplica la UE).
+  - Un deslizador «Energía de la batería (fantasía)» (×1 a ×3, sin más masa) permite volar hasta unos 10 minutos aunque no sea realista (el real vuela 2–3 minutos).
+
+![Escenarios disponibles, con la cinta de fantasía](img/escenarios.png)
+
+![Marte: base marciana al mediodía](img/marte-dia.png)
+
+![Marte: puesta de Sol con cielo azulado](img/marte-atardecer.png)
+
+![Marte de noche: estrellas y Vía Láctea](img/marte-noche.png)
+
+![Ingenuity en su plataforma, con rovers y marcianos](img/marte-ingenuity.png)
+
+![Hangar en Marte: sólo vale el Ingenuity](img/marte-hangar.png)
 
 ![Tierra de cubos](img/tierra-de-cubos.png)
 
@@ -64,8 +78,11 @@ Simulador de drones que funciona en el navegador, sin instalar nada y sin conexi
 **Gráficos realistas con selector de calidad**
 - Iluminación física con sombras reales del sol, cielo con nubes en movimiento, estrellas de noche y reflejos del entorno.
 - Modelos detallados de todas las aeronaves: motores, hélices que se difuminan al girar, tren de aterrizaje, baterías y cámaras, con aspecto propio para cada dron comercial (Tello, Mini, Air, Mavic, Avata, Matrice, eBee).
+- **Cielo nocturno**: la Luna aparece en su fase y posición reales según la fecha y la hora elegidas; en campo abierto, bosque, montaña y costa el cielo es muy oscuro, con más estrellas y la Vía Láctea.
 - Escenarios con textura de terreno, árboles con volumen, agua con reflejos, lava animada y fachadas con ventanas que se encienden al anochecer.
 - Botón **Gráficos** en la barra superior: Auto, Bajo, Medio, Alto y Ultra. *Auto* empieza en Alto y baja de nivel por sí solo si el equipo no llega a unos 27 fotogramas por segundo. También se puede fijar con `?gfx=low`, `med`, `high` o `ultra` al final de la dirección.
+
+![Cielo nocturno con Vía Láctea y Luna](img/cielo-nocturno.png)
 
 ![Hexacóptero en vuelo con sombras y hélices difuminadas](img/graficos-dron-vuelo.png)
 
@@ -153,6 +170,7 @@ Simulador de drones que funciona en el navegador, sin instalar nada y sin conexi
 ## Limitaciones
 
 - Tail-sitter: aerodinámica de la transición simplificada; la entrada a vuelo adelante exige altura mínima (15 m) y velocidad suficiente, a diferencia de ArduPilot; el ajuste fino (`Q_TAILSIT_VHGAIN`, `GSCMSK`…) no se emula. Los `.param` generados son orientativos.
+- Marte: velocidades, empuje y energía del Ingenuity son estimaciones (el fabricante no las publica); Fobos está exagerado de tamaño y el reloj del simulador se usa como hora solar local de Jezero.
 - Gráficos: el nivel adecuado depende de la tarjeta gráfica de cada equipo; si va lento, baja el nivel con el botón «Gráficos» (o déjalo en Auto).
 - Es un simulador didáctico, no un SITL ni un simulador certificado: la dinámica es simplificada y los parámetros de ArduPilot se interpretan de forma aproximada.
 - En los modelos comerciales, el motor y la hélice equivalentes están estimados (el fabricante no los publica); masa, autonomía y velocidades se ajustan a la ficha.
@@ -171,5 +189,3 @@ Autoría: José Luis Guerrero Marín.
 Usa [three.js](https://threejs.org/) (licencia MIT), incluido en el archivo.
 
 Bibliotecas incluidas (licencia MIT): three.js, PeerJS y qrcode-generator.
-
-**Cielo nocturno**: la Luna aparece en su fase y posición reales según la fecha y la hora elegidas; en campo abierto, bosque, montaña y costa el cielo es muy oscuro, con más estrellas y la Vía Láctea.

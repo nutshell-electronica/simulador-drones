@@ -15,7 +15,7 @@ A drone simulator that runs in the browser, with nothing to install and no inter
 **Design the aircraft (Hangar)**
 - Quadcopter, tricopter, hexacopter, octocopter, helicopter and fixed wing.
 - Choose frame, motor, propeller, ESC, battery (chemistry, cell count and capacity), FPV camera, GNSS, rangefinders, LiDAR, parachute and payload. The simulator computes thrust, thrust-to-weight ratio, hover throttle, endurance and current, and warns about dangerous combinations.
-- **Commercial drones with manufacturer data sheets**: Tello, DJI Mini 4 Pro, Mini 5 Pro, Air 3S, Mavic 4 Pro, Avata 2, Matrice 350 RTK and eBee X (fixed wing). They load with published data and cannot be modified (except the Matrice 350 RTK payload). Each sheet states what is manufacturer data, what is estimated and where it comes from.
+- **Commercial drones with manufacturer data sheets**: Tello, DJI Mini 4 Pro, Mini 5 Pro, Air 3S, Mavic 4 Pro, Avata 2, Matrice 350 RTK and eBee X (fixed wing), plus NASA's **Ingenuity** (Mars only). They load with published data and cannot be modified (except the Matrice 350 RTK payload). Each sheet states what is manufacturer data, what is estimated and where it comes from.
 
 **Fly under realistic conditions**
 - Thrust, battery, wind (gusts and turbulence), air density and temperature physics.
@@ -34,17 +34,30 @@ A drone simulator that runs in the browser, with nothing to install and no inter
 - **Recognisable places in Málaga** (simplified models, with the matching starting GPS coordinates):
   - **Port of Málaga · Muelle Uno**, with La Farola in the background, yachts, a cruise ship, the Pompidou Cube, the Palmeral, the Cathedral and Gibralfaro.
   - **Guadalhorce · wooden boardwalk** in the Nature Reserve, with river, lagoons, dunes and the Arraijanal pine forest, the sea to the south and the airport UAS zone to the west.
-- **Fantasy scenarios** (stylised, with their own names):
-  - **Land of Cubes**: a 24 m block world with plains, hills and snowy mountains, rivers and a lake, square trees, a village, a stepped pyramid, stone pillars and floating blocks. Terrain rises in steps and water means a splashdown.
-  - **Lava Fortress**: a dark castle with a central keep, corner towers, crenellated walls and a gate with a bridge over a lava moat, surrounded by lava rivers and lakes. Falling into the lava is a total loss.
-  - **Mars · Jezero crater** («FANTASY» ribbon on the card): a reddish plain with craters, rocks, dunes, three Martian bases, rovers and little green men. Air ~100 times thinner and gravity 3.71 m/s², so **only NASA's Ingenuity helicopter works** (no other drone flies there, and Ingenuity does not fly on Earth). No clouds, dark starry sky, red dust, dust storms, dust devils, Phobos, blue sunsets and shooting stars at night. No GNSS or RTH: it holds position with optical flow up to 40 m. A «Battery energy (fantasy)» slider (×1 to ×3, no extra mass) allows flights of up to ~10 minutes, though unrealistic.
 - Indoors: ToF sensors, 2D LiDAR and optical flow.
-
-![Available scenarios](img/escenarios.png)
 
 ![Muelle Uno in Málaga with La Farola in the background](img/muelle-farola.png)
 
 ![Guadalhorce boardwalk](img/guadalhorce-pasarela.png)
+**Fantasy scenarios** (marked with a slanted «FANTASY» ribbon on the scenario card; stylised, with their own names):
+- **Land of Cubes**: a 24 m block world with plains, hills and snowy mountains, rivers and a lake, square trees, a village, a stepped pyramid, stone pillars and floating blocks. Terrain rises in steps and water is a water landing.
+- **Lava Fortress**: a dark castle with a central keep, corner towers, crenellated walls and a gate with a bridge over a lava moat, surrounded by lava rivers and lakes. Falling into the lava is a total loss.
+- **Mars · Jezero crater**: a reddish plain with craters, rocks, dunes, three Martian bases, rovers and little green men. The air is about 100 times thinner and gravity is 3.71 m/s², so **only NASA's Ingenuity helicopter works** (no other drone flies there, and Ingenuity does not fly on Earth).
+  - No clouds, a very dark starry sky with the Milky Way, red dust, dust devils and dust storms, Phobos and shooting stars at night. Sunsets have Mars' typical **blue** halo.
+  - No GNSS or RTH: Ingenuity holds position with optical flow up to 40 m. Four Martian weather presets and its own regulations panel (EU rules do not apply).
+  - A «Battery energy (fantasy)» slider (×1 to ×3, no extra mass) allows flights of up to ~10 minutes, though unrealistic (the real one flies 2–3 minutes).
+
+![Scenarios, with the fantasy ribbon](img/escenarios.png)
+
+![Mars: Martian base at noon](img/marte-dia.png)
+
+![Mars: sunset with a bluish sky](img/marte-atardecer.png)
+
+![Mars at night: stars and the Milky Way](img/marte-noche.png)
+
+![Ingenuity on its pad, with rovers and Martians](img/marte-ingenuity.png)
+
+![Hangar on Mars: only Ingenuity is valid](img/marte-hangar.png)
 
 ![Land of Cubes](img/tierra-de-cubos.png)
 
@@ -66,8 +79,11 @@ A drone simulator that runs in the browser, with nothing to install and no inter
 **Realistic graphics with a quality selector**
 - Physically based lighting with real sun shadows, a sky with moving clouds, stars at night and environment reflections.
 - Detailed models of every aircraft: motors, propellers that blur when spinning, landing gear, batteries and cameras, with a specific look for each commercial drone (Tello, Mini, Air, Mavic, Avata, Matrice, eBee).
+- **Night sky**: the Moon shows its real phase and position for the chosen date and time; in open field, forest, mountain and coast scenarios the sky is very dark, with more stars and the Milky Way.
 - Scenarios with ground textures, trees with volume, reflective water, animated lava and facades whose windows light up at dusk.
 - **Graphics** button in the top bar: Auto, Low, Medium, High and Ultra. *Auto* starts at High and steps down by itself if the computer cannot reach about 27 frames per second. It can also be set with `?gfx=low`, `med`, `high` or `ultra` at the end of the address.
+
+![Night sky with the Milky Way and the Moon](img/cielo-nocturno.png)
 
 ![Hexacopter in flight with shadows and blurred propellers](img/graficos-dron-vuelo.png)
 
@@ -151,6 +167,7 @@ A drone simulator that runs in the browser, with nothing to install and no inter
 ## Limitations
 
 - Tail-sitter: the transition aerodynamics are simplified; entering forward flight requires a minimum height (15 m) and enough airspeed, unlike ArduPilot; fine tuning (`Q_TAILSIT_VHGAIN`, `GSCMSK`…) is not emulated. The generated `.param` files are indicative only.
+- Mars: Ingenuity's speeds, thrust and energy are estimates (the manufacturer does not publish them); Phobos is exaggerated in size and the simulator clock is used as Jezero local solar time.
 - Graphics: the right level depends on each computer's graphics card; if it runs slowly, lower the level with the «Graphics» button (or leave it on Auto).
 - It is a teaching simulator, not an SITL nor a certified simulator: the dynamics are simplified and ArduPilot parameters are interpreted approximately.
 - For commercial models, the equivalent motor and propeller are estimated (the manufacturer does not publish them); mass, endurance and speeds are fitted to the data sheet.
@@ -170,4 +187,3 @@ Uses [three.js](https://threejs.org/) (MIT licence), included in the file.
 
 Bundled libraries (MIT): three.js, PeerJS and qrcode-generator.
 
-**Night sky**: the Moon shows its real phase and position for the chosen date and time; in open field, forest, mountain and coast scenarios the sky is very dark, with more stars and the Milky Way.
