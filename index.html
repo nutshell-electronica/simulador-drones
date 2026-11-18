@@ -461,6 +461,8 @@ html.dark #map{filter:brightness(.8) contrast(1.05)}
               <div class="row"><label>Tecnología</label><select id="cChem"></select></div>
               <div class="row"><label>Celdas (S)</label><select id="cCells"></select></div>
               <div class="row"><label>Capacidad (mAh)</label><select id="cCap"></select></div>
+              <div class="row" id="eXRow" style="display:none"><label>Energía de la batería (fantasía)</label><div class="val"><input type="range" id="cEx" min="1" max="3" step="0.1"><span id="cExV"></span></div></div>
+              <div class="hint" id="eXHint" style="display:none">No es realista: el Ingenuity real sólo dispone de unos 2–3 minutos de vuelo. Aquí se multiplica la energía de la batería sin aumentar su masa (×3 ≈ 10 minutos de vuelo).</div>
             </div></div>
             <div class="card"><h3>Accesorios y carga</h3><div class="bd">
               <div id="accList"></div>
@@ -592,6 +594,7 @@ var I18N_DICT=[["Controles en pantalla", "On-screen controls"], ["Cuadricóptero
 var I18N_EXACT={"a": "to", "o": "or"};
 I18N_DICT=I18N_DICT.concat([["Fantasía · otro planeta", "Fantasy · another planet"], ["FANTASÍA", "FANTASY"], ["Marte · cráter Jezero", "Mars · Jezero crater"], ["Escenario de fantasía: vuelas sobre Marte, en una llanura rojiza con cráteres, rocas y bases marcianas. El aire es unas 100 veces menos denso y la gravedad 3,71 m/s², así que sólo vale el helicóptero Ingenuity de la NASA. Cielo oscuro y estrellado, polvo rojo, puestas de Sol azules, estrellas fugaces de noche, rovers y hombrecillos verdes. Sin GNSS ni obstáculos aéreos.", "Fantasy scenario: you fly over Mars, on a reddish plain with craters, rocks and Martian bases. The air is about 100 times thinner and gravity is 3.71 m/s², so only NASA's Ingenuity helicopter will do. Dark, starry sky, red dust, blue sunsets, shooting stars at night, rovers and little green men. No GNSS and no aerial obstacles."], ["Marte · día claro", "Mars · clear day"], ["Marte · calma", "Mars · calm"], ["Marte · viento fuerte", "Mars · strong wind"], ["Marte · tormenta de polvo", "Mars · dust storm"], ["Presión a la cota 0 (hPa)", "Pressure at datum 0 (hPa)"], ["Cota del lugar (m, sobre el nivel de referencia)", "Site elevation (m, above reference level)"], ["Rovers circulando", "Rovers driving"], ["Hombrecillos verdes en el terreno", "Little green men on the ground"], ["Marcianitos verdes quietos, paseando y en corrillos. No los sobrevueles.", "Little green men standing, strolling and in huddles. Do not fly over them."], ["Prestaciones calculadas (atmósfera de Marte)", "Calculated performance (Martian atmosphere)"], ["Prestaciones calculadas (atmósfera estándar)", "Calculated performance (standard atmosphere)"], ["de la densidad al nivel del mar en la Tierra", "of Earth's sea-level density"], ["Marte: no aplica la normativa UE (sin espacio aéreo regulado)", "Mars: EU regulations do not apply (no regulated airspace)"], ["(Marte: no aplica la normativa UE)", "(Mars: EU regulations do not apply)"], ["Altura de la referencia óptica: hasta 40 m · ahora", "Optical reference altitude: up to 40 m · now"], ["Distancia a la base:", "Distance to base:"], ["enlace de radio ≈", "radio link ≈"], ["Marcianos: no sobrevolarlos", "Martians: do not fly over them"], ["Rovers: no sobrevolarlos", "Rovers: do not fly over them"], ["un marciano", "a Martian"], ["un rover", "a rover"], ["Marte: el aire es unas 100 veces menos denso que en la Tierra", "Mars: the air is about 100 times thinner than on Earth"], ["y con hélices normales el empuje no levanta ni el propio dron. Sólo vale el helicóptero Ingenuity.", "and with normal propellers the thrust cannot even lift the drone itself. Only the Ingenuity helicopter works."], ["Marte: el Ingenuity sólo vuela en Marte; con la densidad del aire de la Tierra sus rotores darían un empuje cien veces mayor.", "Mars: Ingenuity only flies on Mars; with Earth's air density its rotors would give a hundred times more thrust."], ["NASA / JPL · AeroVironment (sólo Marte)", "NASA / JPL · AeroVironment (Mars only)"], ["Ingenuity (helicóptero de Marte)", "Ingenuity (Mars helicopter)"], ["1,8 kg (≈ 6,7 N de peso en Marte)", "1.8 kg (≈ 6.7 N weight on Mars)"], ["Rotores", "Rotors"], ["2 coaxiales contrarrotantes de 1,2 m (4 palas de fibra de carbono)", "2 coaxial counter-rotating 1.2 m rotors (4 carbon-fibre blades)"], ["Velocidad de giro", "Rotation speed"], ["≈ 2400 rpm (unas 5 veces la de un helicóptero terrestre); punta de pala < Mach 0,7", "≈ 2400 rpm (about 5 times an Earth helicopter's); blade tip < Mach 0.7"], ["Altura / dimensiones", "Height / dimensions"], ["≈ 49 cm de alto · rotores de 1,2 m de diámetro", "≈ 49 cm tall · 1.2 m diameter rotors"], ["6 celdas Li-ion · 2 Ah · 35–40 Wh (cerca de 2/3 se gasta en calentar la electrónica)", "6 Li-ion cells · 2 Ah · 35–40 Wh (about 2/3 is spent heating the electronics)"], ["Vuelo diseñado", "Designed flight"], ["Récord oficial de duración", "Official duration record"], ["cámara de navegación + altímetro láser (sin GNSS); cámara en color", "navigation camera + laser altimeter (no GNSS); colour camera"], ["Atmósfera de Marte", "Martian atmosphere"], ["≈ 1 % de la densidad de la de la Tierra · gravedad 3,71 m/s²", "≈ 1 % of Earth's density · gravity 3.71 m/s²"], ["Densidad ≈ 0,0175 kg/m³ (cráter Jezero, −40 °C)", "Density ≈ 0.0175 kg/m³ (Jezero crater, −40 °C)"], ["Coeficiente de empuje (empuje máx. ≈ 1,6 × el peso) y potencia en estacionario ≈ 300 W (no publicados)", "Thrust coefficient (max thrust ≈ 1.6 × weight) and hover power ≈ 300 W (not published)"], ["Energía de batería útil para volar ≈ 17 Wh (el resto se reserva para calentar)", "Battery energy usable for flight ≈ 17 Wh (the rest is kept for heating)"], ["Velocidades máxima, de ascenso y de descenso", "Maximum, climb and descent speeds"], ["Masa de cada componente", "Mass of each component"], ["NASA/JPL · Ingenuity · datos rápidos", "NASA/JPL · Ingenuity · quick facts"], ["Guinness World Records · el helicóptero que vuela solo en Marte", "Guinness World Records · the self-flying helicopter on Mars"], ["Sólo vale en el escenario «Marte (fantasía)»: con la densidad de la Tierra sus rotores darían un empuje cien veces mayor. Sin GNSS: se pilota con la cámara y el altímetro (no hay RTH). En la realidad vuela de forma autónoma.", "Only valid in the «Mars (fantasy)» scenario: with Earth's density its rotors would give a hundred times more thrust. No GNSS: it is flown with the camera and altimeter (no RTH). In reality it flies autonomously."]]);
 I18N_DICT=I18N_DICT.concat([["hasta 90 s · hasta 10 m de altura · hasta 300 m (ampliados después)", "up to 90 s · up to 10 m altitude · up to 300 m (extended later)"], ["161,3 s", "161.3 s"]]);
+I18N_DICT=I18N_DICT.concat([["Energía de la batería (fantasía)", "Battery energy (fantasy)"], ["No es realista: el Ingenuity real sólo dispone de unos 2–3 minutos de vuelo. Aquí se multiplica la energía de la batería sin aumentar su masa (×3 ≈ 10 minutos de vuelo).", "Not realistic: the real Ingenuity only has about 2–3 minutes of flight. Here the battery energy is multiplied without increasing its mass (×3 ≈ 10 minutes of flight)."]]);
 
 /* ---------- i18n ES/EN: traduce DOM, atributos y texto de canvas en tiempo de ejecución ---------- */
 var I18N=(function(){
@@ -943,9 +946,10 @@ SM.build = function(cfg){
     var c = SM.propCoef(pd.Din,pd.P); ac.ct = c.ct; ac.cp = c.cp;
   }
   ac.escMass = (3+0.4*cfg.esc)/1000;
-  ac.battAh = cfg.cap/1000;
+  ac.battX = (cm&&cm.planet==='mars')?Math.min(3,Math.max(1,+cfg.eX||1)):1;        /* modo fantasía: más energía sin más masa */
+  ac.battAh = cfg.cap/1000*ac.battX;
   ac.battWh = cfg.cells*ch.vc*ac.battAh;
-  ac.battMass = ac.battWh/ch.wh;
+  ac.battMass = ac.battWh/ac.battX/ch.wh;
   ac.battCmax = ac.battAh*ch.c;
   ac.rcell = 0.5/(ac.battAh*ch.c);
   ac.accs = []; ac.accMass=0; ac.accW=0; ac.accCd=0;
@@ -1351,7 +1355,8 @@ SM.vcell = function(chem,d){
                               : [[0,4.20],[0.1,4.05],[0.2,3.93],[0.4,3.82],[0.6,3.75],[0.8,3.65],[0.9,3.55],[1,3.25],[1.1,2.9]];
   return D_.interp(tab,d);
 };
-SM.capFactor = function(T){ return clamp(1-0.012*Math.max(0,15-T)-0.003*Math.max(0,T-35),0.4,1.02); };
+SM.capFactor = function(T){ if(D_.PL && D_.PL.id==='mars') return 1;   /* Ingenuity: batería calefactada */
+  return clamp(1-0.012*Math.max(0,15-T)-0.003*Math.max(0,T-35),0.4,1.02); };
 SM.rintFactor= function(T){ return 1+0.03*Math.max(0,15-T); };
 
 /* Radioenlace -------------------------------------------------- */
@@ -4540,6 +4545,8 @@ function syncComm(){
   ['cType','cFrame','cMotor','cProp','cEsc','cChem','cCells','cCap'].forEach(function(id){ $(id).disabled=!!cm; });
   document.querySelectorAll('#accList input').forEach(function(i){ var b=cm&&(cm.builtin.indexOf(i.dataset.a)>=0||!cm.allowAcc); i.disabled=!!b; i.parentNode.style.opacity=b?0.55:1; });
   $('cPay').disabled=!!cm&&!cm.allowPay;
+  var ex=cm&&cm.planet==='mars'; $('eXRow').style.display=ex?'':'none'; $('eXHint').style.display=ex?'':'none';
+  if(ex){ var xv=Math.min(3,Math.max(1,+c.eX||1)); $('cEx').value=xv; $('cExV').textContent='×'+xv.toFixed(1).replace('.',',')+' · '+Math.round(cm.chem.wh*0+cm.cap*cm.cells*cm.chem.vc/1000*xv)+' Wh'; }
   $('commHint').innerHTML=cm?'<b>Ficha fija del fabricante.</b> '+(cm.allowAcc?'Este modelo admite cambiar la carga útil (cámaras, sensores, lastre).':'Los componentes no son modificables.')+(cm.note?'<br>'+cm.note:''):'Elige un modelo comercial para cargar sus características publicadas, o deja la configuración libre para diseñar tu propia aeronave.';
   var fc=$('fpvCard'); if(fc){ fc.style.display=(cm&&cm.fpvStab)?'':'none'; if(cm&&cm.fpvStab){ var fv=ST.fpv||(ST.fpv={mode:'normal',hs:false,ang:15}); $('fpvMode').value=fv.mode; $('fpvHS').checked=!!fv.hs; $('fpvHS').disabled=fv.mode==='manual'; $('fpvAng').value=fv.ang; $('fpvAngV').textContent=fv.ang+'°'; $('fpvAngRow').style.opacity=fv.mode==='manual'?1:0.45; $('fpvAng').disabled=fv.mode!=='manual'; } }
   var card=$('commCard'); if(!cm){ card.style.display='none'; return; } card.style.display='';
@@ -4727,6 +4734,7 @@ function wire(){
   $('cChem').onchange=chg(function(){ ST.cfg.chem=$('cChem').value; });
   $('cCells').onchange=chg(function(){ ST.cfg.cells=+$('cCells').value; });
   $('cCap').onchange=chg(function(){ ST.cfg.cap=+$('cCap').value; });
+  $('cEx').oninput=chg(function(){ ST.cfg.eX=+$('cEx').value; syncComm(); });
   $('cPay').oninput=chg(function(){ ST.cfg.pay=+$('cPay').value; $('cPayV').textContent=ST.cfg.pay+' g'; });
   $('bStd').onclick=function(){ if(ST.cfg.comm) return; var fs=SD.frameStd(ST.cfg.frame); Object.assign(ST.cfg,JSON.parse(JSON.stringify(fs||SD.STD[ST.cfg.type]))); syncCtrls(); syncAfter(); };
   function interior(acc){ ST.cfg=Object.assign({type:'quad'},JSON.parse(JSON.stringify(SD.STD.quad))); ST.cfg.acc=acc; ST.scn='nave'; ST.elevOv=null; ST.wxId='calma'; ST.wx=Object.assign({},SD.WX.calma); syncCtrls(); syncAfter(); }
