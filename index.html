@@ -124,8 +124,8 @@ kbd{font-family:var(--mono);font-size:10.5px;border:1px solid var(--line2);borde
 #msg p{margin:6px 0 10px;color:var(--ink2)}
 #alerts2{position:absolute;left:430px;top:100px;display:flex;flex-direction:column;gap:3px;align-items:flex-start;width:230px;pointer-events:none}
 #alerts2 .al{font-size:10.5px;padding:2px 8px;letter-spacing:.02em;line-height:1.25}
-.mini #alerts2{left:6px;width:52%;top:200px} .mini #alerts2 .al{font-size:9.5px;padding:2px 5px}
-.mini #alerts .al{font-size:10.5px;padding:3px 8px}
+.mini #alerts2{left:6px;width:52%} .mini #alerts2 .al{font-size:9.5px;padding:2px 5px}
+.mini #alerts,.mini.touch #alerts{left:6px!important;transform:none!important;align-items:flex-start;width:52%;max-width:52%!important} .mini #alerts .al{font-size:9.5px;padding:2px 5px}
 .mini #touch .tbar{left:1%!important;transform:none!important;width:98%;max-width:98%!important;gap:3px;bottom:150px} .mini #touch .tbar button{font-size:10px;padding:5px 5px;min-height:32px}
 #alerts2 .al,#alerts .al{pointer-events:auto;cursor:pointer;user-select:none} .alq{opacity:.7;font-weight:400;margin-left:4px}
 #alDlg{position:absolute;left:50%;top:36%;transform:translate(-50%,-50%);display:none;background:rgba(251,252,253,.98);border:2px solid var(--ink);padding:16px 22px;width:480px;max-width:90%;z-index:30}
@@ -5954,11 +5954,13 @@ H.renderAlerts=function(A){
   var order={c:0,w:1,i:2}; A.sort(function(x,y){return order[x.l]-order[y.l];});
   function mk(L){ return L.slice(0,6).map(function(x){return '<div class="al '+x.l+'" data-l="'+x.l+'" title="Pulsa para ver qué ocurre y qué hacer">'+x.t+' <span class="alq">ⓘ</span></div>';}).join(''); }
   /* en el centro sólo los críticos; el resto, a un lado y más pequeños */
+  var a1=$('alerts'), a2=$('alerts2');
   [['alerts',A.filter(function(x){return x.l==='c';})],['alerts2',A.filter(function(x){return x.l!=='c';})]].forEach(function(p){
     var c=$(p[0]), html=mk(p[1]); if(!c) return;
     if(c._h!==html){ c.innerHTML=html; c._h=html; }
     if(!c._bound){ c._bound=true; c.addEventListener('pointerdown',function(e){ var el=e.target.closest&&e.target.closest('.al'); if(!el) return; e.preventDefault(); var t=I18N.es(el).replace(/\s*ⓘ\s*$/,''); H.alertClick(t,el.getAttribute('data-l')); }); }
   });
+  if(document.documentElement.classList.contains('mini')&&a1&&a2) a2.style.top=(a1.offsetTop+a1.offsetHeight+4)+'px';
 };
 
 /* ---------- normativa ---------- */
