@@ -75,6 +75,19 @@ kbd{font-family:var(--mono);font-size:10.5px;border:1px solid var(--line2);borde
 #ringPop.fin{color:#ffe14a;font-size:38px;text-shadow:0 0 6px #14283a,0 2px 0 #14283a,0 0 22px rgba(255,210,63,.95)} #ringPop.bad{color:#ffb3b3;font-size:22px;text-shadow:0 0 6px #14283a,0 2px 0 #14283a}
 #ringPop.go{animation:rpop 1s ease-out}
 @keyframes rpop{0%{opacity:0;transform:translate(-50%,10px) scale(.7)}15%{opacity:1;transform:translate(-50%,0) scale(1.15)}30%{transform:translate(-50%,0) scale(1)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-24px) scale(1)}}
+#phHud{position:absolute;left:50%;bottom:152px;transform:translateX(-50%);display:none;padding:6px 14px;text-align:center;pointer-events:none;min-width:270px}
+#phHud .ct{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink2);font-weight:700}
+#phHud .cr{display:flex;gap:18px;align-items:baseline;justify-content:center}
+#phHud .cn{font:700 24px/1.1 var(--mono,monospace)} #phHud .cn small{font-size:12px;color:var(--ink2)}
+#phHud .nxt{font-size:12px;margin-top:3px}
+#phDlg{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);display:none;background:rgba(251,252,253,.99);color:#14283a;border:2px solid #14283a;padding:16px 22px;width:640px;max-width:94%;max-height:92vh;overflow:auto;z-index:90}
+#phDlg h2{font-size:15px;letter-spacing:.1em;margin-bottom:10px;color:#0b6aa8}
+#phDlg .phg{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start}
+#phDlg canvas{border:1px solid #9fb2c2;max-width:100%}
+#phDlg .pht{flex:1;min-width:230px} #phDlg .phs{font:700 34px/1 Arial} #phDlg .phs small{font-size:15px;color:#51657a} #phDlg .phn{margin:4px 0 8px;font-weight:700;color:#b85d34}
+#phDlg table{border-collapse:collapse;font-size:12px;width:100%} #phDlg td{padding:2px 4px;border-bottom:1px solid #dfe6ec}
+#phDlg .phl{font-size:11px;margin:6px 0;color:#51657a} #phDlg .phw{margin:6px 0 10px 18px;font-size:12.5px;line-height:1.45}
+#phDlg .phb{display:flex;gap:8px;justify-content:flex-end}
 #compHud{position:absolute;left:50%;bottom:152px;transform:translateX(-50%);display:none;padding:6px 14px;text-align:center;pointer-events:none;min-width:250px}
 #compHud .ct{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink2);font-weight:700}
 #compHud .cr{display:flex;gap:18px;align-items:baseline;justify-content:center}
@@ -235,6 +248,8 @@ kbd{font-family:var(--mono);font-size:10.5px;border:1px solid var(--line2);borde
 .sc p{font-size:11.5px;color:var(--ink2);margin-top:3px}
 .sc{position:relative;overflow:hidden}
 .sc .fant{position:absolute;top:15px;left:-38px;width:140px;text-align:center;transform:rotate(-36deg);background:#b85d34;color:#fff;font:700 10px/1 Arial,Helvetica,sans-serif;letter-spacing:.22em;padding:5px 0 5px .22em;z-index:3;pointer-events:none;box-shadow:0 1px 3px rgba(0,0,0,.45)}
+.sc .phot{position:absolute;top:27px;right:-44px;width:160px;text-align:center;transform:rotate(40deg);background:#55665a;color:#fff;font:700 8.5px/1 Arial,Helvetica,sans-serif;letter-spacing:.04em;padding:5px 0;z-index:3;pointer-events:none;box-shadow:0 1px 3px rgba(0,0,0,.45);white-space:nowrap}
+.sc .phot svg{width:11px;height:9px;vertical-align:-1px;margin-right:4px;fill:#fff}
 #fly{display:flex;align-items:center;gap:14px;padding:10px 18px;background:var(--paper);border-top:2px solid var(--ink)}
 #fly .st{flex:1;font-size:12px}
 #fly .st.bad{color:var(--red);font-weight:700} #fly .st.ok{color:var(--green);font-weight:600}
@@ -411,6 +426,8 @@ html.dark #map{filter:brightness(.8) contrast(1.05)}
   <div id="mini"><div class="mc" id="miniCells"></div><div class="mb"><button class="btn" id="miniHangar">Hangar</button><button class="btn pri" id="miniPause">Pausa · datos</button></div></div>
   <div id="more"><div class="mh"><b>Datos de vuelo</b><span class="sp"></span><button class="btn" id="moreHangar">Hangar</button><button class="btn pri" id="moreResume">Reanudar ▶</button></div><div class="mi" id="moreIn"></div></div>
   <div id="compHud" class="panel"></div>
+  <div id="phHud" class="panel"></div>
+  <div id="phDlg"></div>
   <div id="ringFlash"></div><div id="ringPop"></div>
   <aside id="left" class="panel"></aside>
   <aside id="right" class="panel">
@@ -440,6 +457,7 @@ html.dark #map{filter:brightness(.8) contrast(1.05)}
       <div class="tab" data-p="3"><span class="n">4</span>Radio y normativa</div>
       <div class="tab" data-p="4"><span class="n">5</span>Parámetros ArduPilot</div>
       <div class="tab" data-p="5"><span class="n">6</span>Emisora real</div>
+      <div class="tab" data-p="6"><span class="n">7</span>Fotogrametría</div>
     </div>
     <div id="pages">
       <div class="pg on" id="pg0">
@@ -561,6 +579,7 @@ html.dark #map{filter:brightness(.8) contrast(1.05)}
         </div>
       </div>
       <div class="pg" id="pg5"><div class="cols" id="padUI"></div></div>
+      <div class="pg" id="pg6"><div class="cols" id="phUI"></div></div>
     </div>
     <div id="fly"><div class="st" id="flySt"></div><button class="btn" id="bTheme" title="Alternar el aspecto de toda la interfaz: tema oscuro o claro">Tema: oscuro</button><button class="btn" id="bPrev">Restablecer escenario</button><button class="btn" id="bMob" title="Prototipo: usa el móvil como mando de vuelo (dos joysticks, pausa y hangar) escaneando un código QR">Usar móvil como mando (en pruebas)</button><button class="btn pri" id="bFly">Volar ▶</button></div>
     <div id="mobDlg"><div class="mbox"><h2>MÓVIL COMO MANDO · EN PRUEBAS</h2><div class="mcols"><div class="mleft"><div id="mobQrBox"><div id="mobQr"></div></div><div id="mobCodeRow">Código <b id="mobCode"></b></div></div><div class="mright"><p>Escanea el código con la cámara del móvil. Se abrirá un mando con dos joysticks, un botón de pausa y otro de hangar (mantenlo pulsado). Pon el móvil en horizontal.</p><p class="mnote">Hacen falta internet en los dos aparatos. Si la wifi del centro aísla los dispositivos o bloquea el servidor de enlace, no conectará. Si el móvil deja de enviar, los mandos vuelven a cero.</p><div class="mst" id="mobSt"></div><div class="mlnk" id="mobUrl"></div></div></div><div class="mbt"><button class="btn" id="mobNew">Código nuevo</button><button class="btn" id="mobStop">Desconectar móvil</button><button class="btn pri" id="mobClose">Cerrar</button></div></div></div>
@@ -595,6 +614,54 @@ var I18N_EXACT={"a": "to", "o": "or"};
 I18N_DICT=I18N_DICT.concat([["Fantasía · otro planeta", "Fantasy · another planet"], ["FANTASÍA", "FANTASY"], ["Marte · cráter Jezero", "Mars · Jezero crater"], ["Escenario de fantasía: vuelas sobre Marte, en una llanura rojiza con cráteres, rocas y bases marcianas. El aire es unas 100 veces menos denso y la gravedad 3,71 m/s², así que sólo vale el helicóptero Ingenuity de la NASA. Cielo oscuro y estrellado, polvo rojo, puestas de Sol azules, estrellas fugaces de noche, rovers y hombrecillos verdes. Sin GNSS ni obstáculos aéreos.", "Fantasy scenario: you fly over Mars, on a reddish plain with craters, rocks and Martian bases. The air is about 100 times thinner and gravity is 3.71 m/s², so only NASA's Ingenuity helicopter will do. Dark, starry sky, red dust, blue sunsets, shooting stars at night, rovers and little green men. No GNSS and no aerial obstacles."], ["Marte · día claro", "Mars · clear day"], ["Marte · calma", "Mars · calm"], ["Marte · viento fuerte", "Mars · strong wind"], ["Marte · tormenta de polvo", "Mars · dust storm"], ["Presión a la cota 0 (hPa)", "Pressure at datum 0 (hPa)"], ["Cota del lugar (m, sobre el nivel de referencia)", "Site elevation (m, above reference level)"], ["Rovers circulando", "Rovers driving"], ["Hombrecillos verdes en el terreno", "Little green men on the ground"], ["Marcianitos verdes quietos, paseando y en corrillos. No los sobrevueles.", "Little green men standing, strolling and in huddles. Do not fly over them."], ["Prestaciones calculadas (atmósfera de Marte)", "Calculated performance (Martian atmosphere)"], ["Prestaciones calculadas (atmósfera estándar)", "Calculated performance (standard atmosphere)"], ["de la densidad al nivel del mar en la Tierra", "of Earth's sea-level density"], ["Marte: no aplica la normativa UE (sin espacio aéreo regulado)", "Mars: EU regulations do not apply (no regulated airspace)"], ["(Marte: no aplica la normativa UE)", "(Mars: EU regulations do not apply)"], ["Altura de la referencia óptica: hasta 40 m · ahora", "Optical reference altitude: up to 40 m · now"], ["Distancia a la base:", "Distance to base:"], ["enlace de radio ≈", "radio link ≈"], ["Marcianos: no sobrevolarlos", "Martians: do not fly over them"], ["Rovers: no sobrevolarlos", "Rovers: do not fly over them"], ["un marciano", "a Martian"], ["un rover", "a rover"], ["Marte: el aire es unas 100 veces menos denso que en la Tierra", "Mars: the air is about 100 times thinner than on Earth"], ["y con hélices normales el empuje no levanta ni el propio dron. Sólo vale el helicóptero Ingenuity.", "and with normal propellers the thrust cannot even lift the drone itself. Only the Ingenuity helicopter works."], ["Marte: el Ingenuity sólo vuela en Marte; con la densidad del aire de la Tierra sus rotores darían un empuje cien veces mayor.", "Mars: Ingenuity only flies on Mars; with Earth's air density its rotors would give a hundred times more thrust."], ["NASA / JPL · AeroVironment (sólo Marte)", "NASA / JPL · AeroVironment (Mars only)"], ["Ingenuity (helicóptero de Marte)", "Ingenuity (Mars helicopter)"], ["1,8 kg (≈ 6,7 N de peso en Marte)", "1.8 kg (≈ 6.7 N weight on Mars)"], ["Rotores", "Rotors"], ["2 coaxiales contrarrotantes de 1,2 m (4 palas de fibra de carbono)", "2 coaxial counter-rotating 1.2 m rotors (4 carbon-fibre blades)"], ["Velocidad de giro", "Rotation speed"], ["≈ 2400 rpm (unas 5 veces la de un helicóptero terrestre); punta de pala < Mach 0,7", "≈ 2400 rpm (about 5 times an Earth helicopter's); blade tip < Mach 0.7"], ["Altura / dimensiones", "Height / dimensions"], ["≈ 49 cm de alto · rotores de 1,2 m de diámetro", "≈ 49 cm tall · 1.2 m diameter rotors"], ["6 celdas Li-ion · 2 Ah · 35–40 Wh (cerca de 2/3 se gasta en calentar la electrónica)", "6 Li-ion cells · 2 Ah · 35–40 Wh (about 2/3 is spent heating the electronics)"], ["Vuelo diseñado", "Designed flight"], ["Récord oficial de duración", "Official duration record"], ["cámara de navegación + altímetro láser (sin GNSS); cámara en color", "navigation camera + laser altimeter (no GNSS); colour camera"], ["Atmósfera de Marte", "Martian atmosphere"], ["≈ 1 % de la densidad de la de la Tierra · gravedad 3,71 m/s²", "≈ 1 % of Earth's density · gravity 3.71 m/s²"], ["Densidad ≈ 0,0175 kg/m³ (cráter Jezero, −40 °C)", "Density ≈ 0.0175 kg/m³ (Jezero crater, −40 °C)"], ["Coeficiente de empuje (empuje máx. ≈ 1,6 × el peso) y potencia en estacionario ≈ 300 W (no publicados)", "Thrust coefficient (max thrust ≈ 1.6 × weight) and hover power ≈ 300 W (not published)"], ["Energía de batería útil para volar ≈ 17 Wh (el resto se reserva para calentar)", "Battery energy usable for flight ≈ 17 Wh (the rest is kept for heating)"], ["Velocidades máxima, de ascenso y de descenso", "Maximum, climb and descent speeds"], ["Masa de cada componente", "Mass of each component"], ["NASA/JPL · Ingenuity · datos rápidos", "NASA/JPL · Ingenuity · quick facts"], ["Guinness World Records · el helicóptero que vuela solo en Marte", "Guinness World Records · the self-flying helicopter on Mars"], ["Sólo vale en el escenario «Marte (fantasía)»: con la densidad de la Tierra sus rotores darían un empuje cien veces mayor. Sin GNSS: se pilota con la cámara y el altímetro (no hay RTH). En la realidad vuela de forma autónoma.", "Only valid in the «Mars (fantasy)» scenario: with Earth's density its rotors would give a hundred times more thrust. No GNSS: it is flown with the camera and altimeter (no RTH). In reality it flies autonomously."]]);
 I18N_DICT=I18N_DICT.concat([["hasta 90 s · hasta 10 m de altura · hasta 300 m (ampliados después)", "up to 90 s · up to 10 m altitude · up to 300 m (extended later)"], ["161,3 s", "161.3 s"]]);
 I18N_DICT=I18N_DICT.concat([["Energía de la batería (fantasía)", "Battery energy (fantasy)"], ["No es realista: el Ingenuity real sólo dispone de unos 2–3 minutos de vuelo. Aquí se multiplica la energía de la batería sin aumentar su masa (×3 ≈ 10 minutos de vuelo).", "Not realistic: the real Ingenuity only has about 2–3 minutes of flight. Here the battery energy is multiplied without increasing its mass (×3 ≈ 10 minutes of flight)."]]);
+I18N_DICT=I18N_DICT.concat([
+["Fotogrametría","Photogrammetry"],["FOTOGRAMETRÍA","PHOTOGRAMMETRY"],["Cámara y calidad","Camera and quality"],["Zona a cartografiar","Area to map"],["Vista previa","Preview"],["Resultado del plan","Plan result"],
+["Automática (según la aeronave)","Automatic (depends on the aircraft)"],["Resolución en el suelo (GSD)","Ground resolution (GSD)"],["Altura de vuelo","Flight height"],["Fijar","Set"],["Cámara","Camera"],
+["GSD (cm/píxel)","GSD (cm/pixel)"],["Altura (m)","Height (m)"],["Solape longitudinal","Forward overlap"],["Solape lateral","Side overlap"],["Obturador","Shutter"],["Velocidad (m/s; 0 = auto)","Speed (m/s; 0 = auto)"],
+["Centro: este (m)","Centre: east (m)"],["Centro: norte (m)","Centre: north (m)"],["Ancho (m)","Width (m)"],["Largo (m)","Length (m)"],["Rumbo de las líneas (°)","Line heading (°)"],
+["Centrar frente al despegue","Centre in front of take-off"],["Exportar puntos (CSV)","Export points (CSV)"],["Misión en el próximo vuelo","Mission on next flight"],["Vuelo manual guiado con intervalómetro","Guided manual flight with intervalometer"],
+["Ver informe del último vuelo","View last flight report"],["Aún no hay ningún vuelo con misión","No mission flown yet"],
+["Datos de las cámaras aproximados, con fines didácticos. Aquí se ","Camera data are approximate, for teaching. Here you "],["valora","assess"],[" si la misión automática sería viable con estos parámetros; el vuelo lo haces tú a mano, con las líneas y las fotos guiadas en el minimapa."," whether the automatic mission would be feasible with these parameters; you fly by hand, with the lines and photos guided on the minimap."],
+["Pulsa en el mapa para colocar el centro de la zona. Amarillo = despegue, naranja = líneas de vuelo, puntos negros = fotos.","Click the map to place the centre of the area. Yellow = take-off, orange = flight lines, black dots = photos."],
+["Este escenario no admite fotogrametría.","This scenario does not support photogrammetry."],["Elige uno marcado con la cinta de cámara en la pestaña Escenario (campo, bosque, montaña, costa, Guadalhorce, barrio, ciudad o muelle). Los escenarios de interior, de fantasía y el aeropuerto no sirven: o no hay terreno que cartografiar o no tiene sentido hacerlo.","Pick one with the camera ribbon on the Scenario tab (open field, forest, mountain, coast, Guadalhorce, neighbourhood, city or quay). Indoor and fantasy scenarios and the airport do not work: there is no terrain to map or it makes no sense."],
+["Sensor ","Sensor "],[" mm de ancho · "," mm wide · "],[" px · focal "," px · focal length "],[" mm · disparo mínimo cada "," mm · shortest shot interval "],
+["VIABLE CON AVISOS","FEASIBLE WITH WARNINGS"],["NO VIABLE","NOT FEASIBLE"],["VIABLE","FEASIBLE"],
+["Huella","Footprint"],["Entre líneas","Line spacing"],["Entre fotos","Photo spacing"],["Líneas","Lines"],["Fotos","Photos"],["Velocidad","Speed"],["Intervalo","Interval"],["Distancia","Distance"],["Duración","Duration"],["Baterías","Batteries"],["Superficie","Area"],["Desenfoque","Blur"],["Rango de fotos","Camera speed limit"],
+["Esta aeronave no lleva cámara: añade la «Cámara 4K con gimbal» en la pestaña de configuración.","This aircraft has no camera: add the “4K camera with gimbal” in the configuration tab."],
+["Altura de vuelo ","Flight height "],[" m sobre el terreno (dentro de los 120 m)."," m above ground (within the 120 m limit)."],
+["Altura de ","Height of "],[": supera el límite de 120 m de la categoría abierta. Sube el GSD o baja la altura.",": above the 120 m limit of the open category. Raise the GSD or lower the height."],[": muy baja, cualquier árbol o mástil es un riesgo.",": very low, any tree or mast is a hazard."],
+["La altura supera el techo de servicio de la aeronave (","The height exceeds the aircraft's service ceiling ("],
+["Obstáculo en la zona (","Obstacle in the area ("],[" m sobre el suelo): la altura del plan no deja 10 m de margen."," m above ground): the planned height leaves no 10 m margin."],["Obstáculo más alto de la zona: ","Tallest obstacle in the area: "],[" m, con margen suficiente."," m, with enough margin."],["Sin obstáculos dentro de la zona.","No obstacles inside the area."],
+["Velocidad de misión ","Mission speed "],[": la aeronave sólo alcanza ",": the aircraft only reaches "],
+["Disparo cada ","Shot every "],[" s, pero esta cámara necesita al menos "," s, but this camera needs at least "],[" s. Reduce la velocidad, sube la altura o baja el solape longitudinal."," s. Reduce the speed, raise the height or lower the forward overlap."],
+["Intervalo entre fotos ","Photo interval "],[" s (mínimo de la cámara "," s (camera minimum "],
+["Desenfoque de movimiento de ","Motion blur of "],[" píxeles: las fotos saldrán movidas. Usa obturador más rápido o vuela más despacio."," pixels: photos will come out blurred. Use a faster shutter or fly slower."],[" píxeles (lo recomendable es ≤ 0,5)."," pixels (≤ 0.5 is recommended)."],["Desenfoque de movimiento ","Motion blur "],[" píxeles (correcto)."," pixels (good)."],
+["La velocidad automática sale muy baja (","The automatic speed comes out very low ("],[" m/s): la misión será larguísima. Aumenta el GSD o baja el solape."," m/s): the mission will be very long. Increase the GSD or lower the overlap."],
+["Viento con rachas de ","Wind gusting to "],[" m/s: la aeronave no puede mantener las líneas de vuelo."," m/s: the aircraft cannot hold the flight lines."],[" m/s: desviará las líneas y empeora los solapes."," m/s: it will drift the lines and worsen the overlaps."],["Viento tolerable (","Tolerable wind ("],[" m/s con rachas)."," m/s with gusts)."],
+["Viento de cara/cola de ","Head/tail wind of "],[" m/s: la velocidad sobre el suelo cambiará mucho entre líneas."," m/s: the ground speed will change a lot between lines."],
+["Con lluvia no se debe hacer fotogrametría (lente, motores y calidad de imagen).","Do not do photogrammetry in rain (lens, motors and image quality)."],
+["Visibilidad de ","Visibility of "],[" km: insuficiente."," km: insufficient."],[" km: las fotos saldrán con velo."," km: photos will look hazy."],
+["Sol a ","Sun at "],["° o por debajo del horizonte: no hay luz para fotogrametría.","° or below the horizon: not enough light for photogrammetry."],["Sol bajo (","Low sun ("],["°): sombras muy largas que confunden la reconstrucción. Lo ideal es más de 25°.","°): very long shadows that confuse the reconstruction. Over 25° is ideal."],["Elevación del Sol ","Sun elevation "],["° (buena luz).","° (good light)."],
+["Hay puntos a ","There are points at "],[" m del despegue y tu límite de vuelo a la vista es de "," m from take-off and your visual line-of-sight limit is "],[" m: se saldría de VLOS."," m: it would leave VLOS."],["Toda la zona está dentro del alcance visual (","The whole area is within visual range ("],[" m frente a "," m versus "],
+["La misión dura unos ","The mission lasts about "],[" min y una batería da ~"," min and one battery gives ~"],[" min útiles: harán falta "," useful min: you will need "],[" baterías ("," batteries ("],[" relevo"," swap"],[") o dividir la zona.",") or split the area."],["Cabe en una batería: ","Fits in one battery: "],[" min de misión frente a "," min of mission against "],[" min útiles."," useful min."],
+["Desnivel de ","Height difference of "],[" m en la zona ("," m in the area ("],[" % de la altura): el GSD variará mucho. Planifica siguiendo el terreno."," % of the height): the GSD will vary a lot. Plan following the terrain."],
+["Más del 70 % de la zona es agua: no hay puntos de enlace y no se reconstruye.","More than 70 % of the area is water: no tie points, so it cannot be reconstructed."],[" % de la zona es agua: esa parte saldrá con huecos."," % of the area is water: that part will have holes."],
+["Hay personas en el escenario: no se puede sobrevolar a personas no participantes.","There are people in the scenario: you must not overfly uninvolved people."],
+["Volumen: ","Volume: "],["; el procesado será muy pesado. Divide la zona en bloques.","; processing will be very heavy. Split the area into blocks."],
+["Esta aeronave con cámara exige registro de operador y seguro para volar.","This aircraft with a camera requires operator registration and insurance to fly."],
+["Genérica 1″ de 20 MP","Generic 1″ 20 MP"],["Genérica 1/2,3″ de 12 MP","Generic 1/2.3″ 12 MP"],
+["Terminar y ver informe","Finish and view report"],[" fotos"," photos"],[" % cobertura"," % coverage"],[" (plan "," (plan "],
+["INFORME DE FOTOGRAMETRÍA","PHOTOGRAMMETRY REPORT"],["Excelente: el modelo saldría limpio.","Excellent: the model would come out clean."],["Buen trabajo: se reconstruiría con pequeños huecos.","Good job: it would be reconstructed with small holes."],["Aprobado justo: habría zonas sin reconstruir.","Bare pass: some areas would not be reconstructed."],["Insuficiente: habría que repetir el vuelo.","Insufficient: the flight would have to be repeated."],
+["(previstas ","(planned "],["Cobertura ≥ 3 fotos","Coverage ≥ 3 photos"],["Cobertura ≥ 5 fotos","Coverage ≥ 5 photos"],["Huecos sin foto","Gaps with no photo"],["Solape medio","Mean overlap"],[" fotos por punto"," photos per point"],["GSD real / previsto","Actual / planned GSD"],["Desenfoque medio","Mean blur"],[" nítidas)"," sharp)"],["Fotos fuera de la zona","Photos outside the area"],["Tiempo de captura","Capture time"],
+[" sin foto"," no photo"],["5 o más","5 or more"],
+["Huecos: ","Gaps: "],[" de la zona sin ninguna foto; revisa los huecos rojos y repite esas líneas."," of the area with no photo; check the red gaps and re-fly those lines."],["Cobertura baja: ","Low coverage: "],[" de la zona sale en 3 o más fotos, el mínimo para triangular bien."," of the area appears in 3 or more photos, the minimum for good triangulation."],
+["Desenfoque: ","Blur: "],[" de las fotos sale movido; vuela más despacio o usa obturador más rápido."," of the photos are blurred; fly slower or use a faster shutter."],["Fuera de zona: ","Outside area: "],[" de las fotos se hizo fuera del área."," of the photos were taken outside the area."],
+["El GSD real (","The actual GSD ("],[") se aleja del previsto ("],[") is far from the planned ("],["): mantén la altura del plan (","): keep the planned height ("],
+["El vuelo terminó en siniestro.","The flight ended in a crash."],["Sin incidencias destacables.","Nothing notable."],["Descargar fotos (CSV)","Download photos (CSV)"],
+["Aeronave con cámara","Aircraft with camera"]
+]);
+I18N_DICT=I18N_DICT.concat([["Altura","Height"]]);
+I18N_DICT=I18N_DICT.concat([["En los escenarios con la cinta de cámara, la pestaña ","In the scenarios with the camera ribbon, the "],[" del hangar planifica un levantamiento: eliges cámara, GSD (o altura), solapes y la zona, y el simulador calcula líneas, fotos, velocidad, duración y baterías, y te dice si la misión automática sería "," tab in the hangar plans a survey: you choose the camera, GSD (or height), overlaps and the area, and the simulator works out lines, photos, speed, duration and batteries, and tells you whether the automatic mission would be "],["viable","feasible"],[" (obstáculos, viento, Sol, VLOS, desenfoque, intervalo de la cámara…). Si activas «Misión en el próximo vuelo», vuelas tú a mano: el intervalómetro dispara solo dentro de la zona, el minimapa muestra las líneas y la cobertura, y al aterrizar (o con «Terminar y ver informe») sale el informe con mapa de cobertura, GSD real, desenfoque y nota."," (obstacles, wind, Sun, VLOS, blur, camera interval…). If you enable “Mission on next flight”, you fly by hand: the intervalometer fires only inside the area, the minimap shows the lines and the coverage, and on landing (or with “Finish and view report”) you get the report with coverage map, actual GSD, blur and a mark."]]);
 
 /* ---------- i18n ES/EN: traduce DOM, atributos y texto de canvas en tiempo de ejecución ---------- */
 var I18N=(function(){
@@ -1966,6 +2033,13 @@ SW.LIST = [
  {id:'nave', name:'Nave industrial (interior)', tag:'Interior · LiDAR', wx:'calma', desc:'Nave de 60 × 53 × 14 m sin GNSS, con columnas, estanterías, palés y una viga. Equipa telémetros láser o un LiDAR 360° y observa las distancias a paredes y obstáculos.'},
  {id:'aeropuerto', name:'Cercanía de aeropuerto', tag:'Normativa', wx:'calma', desc:'Zona geográfica UAS restringida de 2 km de radio alrededor de la pista y tráfico tripulado cruzando. Practica el respeto del espacio aéreo.'}
 ];
+/* orden: de lo sencillo a lo complejo/urbano y al final la fantasía; photo = admite fotogrametría */
+(function(){
+  var ORD=['campo','bosque','montana','costa','guadalhorce','barrio','ciudad','muelle','aeropuerto','nave','bloques','fortaleza','marte'];
+  var PH={campo:1,bosque:1,montana:1,costa:1,guadalhorce:1,barrio:1,ciudad:1,muelle:1};
+  SW.LIST.forEach(function(m){ if(PH[m.id]) m.photo=true; });
+  SW.LIST.sort(function(a,b){ var x=ORD.indexOf(a.id), y=ORD.indexOf(b.id); return (x<0?99:x)-(y<0?99:y); });
+})();
 
 function Grid(){ this.c={}; this.cs=50; }
 Grid.prototype.add=function(o){
@@ -4376,6 +4450,7 @@ AUD.event=function(name){
   if(name==='crash'){ burst(t,1.1,3500,120,1.0); tone(95,t,0.5,'sine',0.9,28); for(var i=0;i<4;i++) tone(300+Math.random()*700,t+0.05+i*0.09+Math.random()*0.05,0.2,'triangle',0.28); burst(t+0.25,0.6,900,100,0.5); }
   else if(name==='splash'){ burst(t,0.9,2600,250,0.9); tone(160,t,0.35,'sine',0.5,55); burst(t+0.12,0.7,1400,500,0.45,'bandpass'); for(var j=0;j<7;j++) tone(350+Math.random()*600,t+0.5+j*0.17+Math.random()*0.1,0.09,'sine',0.12,900+Math.random()*500); }
   else if(name==='explode'){ burst(t,1.8,5000,60,1.3); tone(70,t,1.1,'sine',1.0,18); tone(140,t+0.02,0.5,'square',0.25,30); for(var i2=0;i2<9;i2++) burst(t+0.15+i2*0.11+Math.random()*0.08,0.18,2500,400,0.35); burst(t+0.6,1.6,600,80,0.4); }
+  else if(name==='shot'){ burst(t,0.03,7000,2500,0.22); tone(1700,t,0.025,'square',0.06); tone(900,t+0.04,0.03,'square',0.05); }
   else if(name==='ring'){ tone(988,t,0.07,'triangle',0.30); tone(1319,t+0.06,0.40,'triangle',0.30); tone(2637,t+0.06,0.30,'sine',0.12); tone(3951,t+0.06,0.18,'sine',0.05); burst(t,0.08,9000,5000,0.10,'highpass'); }
   else if(name==='ringend'){ [523,659,784,1047,1319].forEach(function(f,i){ tone(f,t+i*0.075,0.30,'triangle',0.28); tone(f*2,t+i*0.075,0.22,'sine',0.08); }); tone(1047,t+0.4,0.6,'triangle',0.22); tone(1319,t+0.4,0.6,'triangle',0.2); tone(1568,t+0.4,0.6,'triangle',0.2); }
   else if(name==='miss'){ tone(260,t,0.18,'sawtooth',0.18,150); }
@@ -4589,7 +4664,7 @@ function buildStatic(){
   var sc=$('scnList'); sc.innerHTML='';
   SW.LIST.forEach(function(m){
     var d=document.createElement('div'); d.className='sc'+(m.fantasy?' fan':''); d.dataset.id=m.id;
-    d.innerHTML='<canvas width="300" height="110"></canvas>'+(m.fantasy?'<span class="fant">FANTASÍA</span>':'')+'<div class="t"><em>'+m.tag+'</em><b>'+m.name+'</b><p>'+m.desc+'</p></div>';
+    d.innerHTML='<canvas width="300" height="110"></canvas>'+(m.fantasy?'<span class="fant">FANTASÍA</span>':'')+(m.photo?'<span class="phot"><svg viewBox="0 0 22 18"><path d="M7 0h8l1.6 2.5H20a2 2 0 0 1 2 2V16a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4.5a2 2 0 0 1 2-2h3.4zM11 5.2a4.6 4.6 0 1 0 .01 0zM11 7.4a2.4 2.4 0 1 1-.01 0z" fill-rule="evenodd"/></svg>FOTOGRAMETRÍA</span>':'')+'<div class="t"><em>'+m.tag+'</em><b>'+m.name+'</b><p>'+m.desc+'</p></div>';
     sc.appendChild(d);
   });
   /* radio */
@@ -4779,9 +4854,9 @@ function wire(){
   $('rFb').onchange=chg(function(){ ST.rf.fb=$('rFb').value; });
   $('rAlt').oninput=chg(function(){ ST.rf.alt=+$('rAlt').value; $('rAltV').textContent=ST.rf.alt+' m'; });
   $('rObs').onchange=chg(function(){ ST.rf.obs=$('rObs').checked; });
-  $('tabs').onclick=function(e){ var t=e.target.closest('.tab'); if(!t) return; document.querySelectorAll('.tab').forEach(function(x){x.classList.toggle('on',x===t);}); document.querySelectorAll('.pg').forEach(function(p,i){p.classList.toggle('on',i==t.dataset.p);}); };
+  $('tabs').onclick=function(e){ var t=e.target.closest('.tab'); if(!t) return; document.querySelectorAll('.tab').forEach(function(x){x.classList.toggle('on',x===t);}); document.querySelectorAll('.pg').forEach(function(p,i){p.classList.toggle('on',i==t.dataset.p);}); if(t.dataset.p==='6'&&SIM.photoUI) SIM.photoUI(); };
 }
-SIM.refreshAll=function(){ syncCtrls(); SIM.validate(); SIM.save(); };
+SIM.refreshAll=function(){ syncCtrls(); SIM.validate(); SIM.save(); var p6=document.getElementById('pg6'); if(p6&&p6.classList.contains('on')&&SIM.photoUI) SIM.photoUI(); };
 SIM.initHangar=function(){
   buildStatic(); syncCtrls(); wire(); SIM.validate(); if(SIM.apInit) SIM.apInit();
   /* miniaturas de escenarios */
@@ -5381,6 +5456,289 @@ document.addEventListener('DOMContentLoaded',go);
 if(document.readyState!=='loading') go();
 })();
 
+/* ============ FOTOGRAMETRÍA: planificador, misión manual guiada e informe ============ */
+var ST=SIM.ST;
+var PH={run:false,shots:[],plan:null,cov:null,last:null,done:false,c1:0,c3:0,nCell:0,lastX:null,lastZ:null,lastT:-9,hudT:0};
+var PHCAM={
+  mini4:{n:'DJI Mini 4 Pro (1/1,3″, 48 MP)',sw:9.6,iw:8064,ih:6048,f:6.7,tmin:2.0},
+  air3s:{n:'DJI Air 3S (1″, 50 MP)',sw:13.2,iw:8192,ih:6144,f:8.9,tmin:2.0},
+  mavic4:{n:'DJI Mavic 4 Pro (4/3″, 100 MP)',sw:17.3,iw:11648,ih:8736,f:12,tmin:2.0},
+  m350:{n:'Matrice 350 + Zenmuse P1 (full frame, 45 MP)',sw:35.9,iw:8192,ih:5460,f:35,tmin:0.7},
+  ebee:{n:'eBee X + S.O.D.A. (1″, 20 MP)',sw:13.2,iw:5472,ih:3648,f:10.6,tmin:1.5},
+  gen1:{n:'Genérica 1″ de 20 MP',sw:13.2,iw:5472,ih:3648,f:8.8,tmin:1.5},
+  gen2:{n:'Genérica 1/2,3″ de 12 MP',sw:6.17,iw:4000,ih:3000,f:4.5,tmin:2.5}
+};
+var PHDEF={on:false,cam:'auto',mode:'gsd',gsd:3,alt:80,front:80,side:70,shutter:1000,vel:0,e:0,n:150,w:200,l:200,ang:0};
+SIM.photoOK=function(id){ var m=SW.LIST.filter(function(x){return x.id===(id||ST.scn);})[0]; return !!(m&&m.photo); };
+var PHW={id:null,w:null};
+function phWorld(){ if(PHW.id!==ST.scn){ PHW.w=SW.make(ST.scn); PHW.id=ST.scn; } return PHW.w; }
+function phP(){ ST.photo=Object.assign({},PHDEF,ST.photo||{}); return ST.photo; }
+function phCamId(V){
+  var P=phP(); if(P.cam!=='auto') return P.cam; var cm=V.ac.cm;
+  if(cm){ var m={'dji-mini4pro':'mini4','dji-mini5pro':'mini4','dji-air3s':'air3s','dji-mavic4pro':'mavic4','dji-m350':'m350','ebee-x':'ebee'}[cm.id]; if(m) return m; return 'gen1'; }
+  return 'gen2';
+}
+function phHasCam(V){ return !!V.ac.cm || V.ac.has('camhd'); }
+/* ---- cálculo de la misión (puro) ---- */
+SIM.photoPlan=function(){
+  var V=SIM.validate(), I=V.info, ac=V.ac, P=phP(), w=phWorld(), wx=ST.wx, fixed=(ac.kind==='fixed'), D2R=Math.PI/180;
+  var cam=PHCAM[phCamId(V)], pix=cam.sw/cam.iw, texp=1/P.shutter, A=P.ang*D2R;
+  var gsd,alt; if(P.mode==='gsd'){ gsd=P.gsd/100; alt=gsd*cam.f/pix; } else { alt=P.alt; gsd=alt*pix/cam.f; }
+  var Wg=gsd*cam.iw, Hg=gsd*cam.ih, front=P.front/100, side=P.side/100;
+  var lineSp=Wg*(1-side), phSp=Hg*(1-front);
+  var nL=Math.max(1,Math.ceil(P.w/lineSp)+1), ls=nL>1?P.w/(nL-1):0;
+  var ext=phSp, L=P.l+2*ext, nPh=Math.max(2,Math.ceil(L/phSp)+1);
+  var vmaxD=ac.spec?ac.spec.vmax:(ac.kind==='heli'?14:16);
+  var wl=Math.abs(wx.wind*Math.cos((wx.dir-P.ang)*D2R)), wt=wx.wind+(wx.gust||0);
+  var vCam=phSp/cam.tmin, vBlur=0.5*gsd/texp, v, vg;
+  if(fixed){ v=I.cruiseV||12; vg=v+wl; }
+  else { v=P.vel>0?P.vel:Math.max(1,Math.min(0.9*vCam,0.85*vmaxD,vBlur)); vg=v; }
+  var blur=vg*texp/gsd, interval=phSp/vg;
+  /* geometría: centro y ejes locales */
+  var cx=w.home.x+P.e, cz=w.home.z-P.n, rx=Math.cos(A), rz=Math.sin(A), dx=Math.sin(A), dz=-Math.cos(A);
+  function W2(u,vv){ return {x:cx+u*rx+vv*dx, z:cz+u*rz+vv*dz}; }
+  var wps=[], ph=[];
+  for(var i=0;i<nL;i++){ var u=-P.w/2+i*ls, dir=(i%2===0)?1:-1, a=W2(u,-dir*L/2), b=W2(u,dir*L/2); wps.push(a,b);
+    for(var j=0;j<nPh;j++){ var vv=-dir*L/2+dir*j*(L/(nPh-1)); ph.push(W2(u,vv)); } }
+  var dLine=nL*L, dTurn=(nL-1)*ls, dIn=Math.hypot(wps[0].x-w.home.x,wps[0].z-w.home.z), dOut=Math.hypot(wps[wps.length-1].x-w.home.x,wps[wps.length-1].z-w.home.z);
+  var turnT=fixed?25:4, vT=Math.min(vmaxD*0.7,10);
+  var tMis=dLine/vg+(nL-1)*turnT+(fixed?nL*120/vg:0), tTr=(dIn+dOut)/vT, tVert=alt/3*2+45;
+  var Ttot=(tMis+tTr+tVert)/60*(wl>5?1.1:1);
+  var usable=fixed?I.cruiseMin:I.hoverMin*0.92, packs=Math.max(1,Math.ceil(Ttot/(usable*0.9)));
+  /* terreno y obstáculos en la zona */
+  var gmin=1e9,gmax=-1e9,gs=0,gn=0,water=0,maxTop=-1e9,maxObs=null,k,m;
+  for(i=0;i<=10;i++)for(j=0;j<=10;j++){ var q=W2(-P.w/2+P.w*i/10,-P.l/2+P.l*j/10), h=w.terrainH(q.x,q.z); gmin=Math.min(gmin,h); gmax=Math.max(gmax,h); gs+=h; gn++; if(w.isWater&&w.isWater(q.x,q.z)) water++; }
+  var gm=gs/gn, h0=w.terrainH(w.home.x,w.home.z), altTO=alt+(gm-h0), flyY=gm+alt;
+  (w.obstacles||[]).forEach(function(o){ var rr=Math.max(o.rx||o.dx||0,o.rz||0), tx=o.x-cx, tz=o.z-cz, u=tx*rx+tz*rz, vv=tx*dx+tz*dz;
+    if(Math.abs(u)<=P.w/2+rr&&Math.abs(vv)<=P.l/2+rr&&o.top>maxTop){ maxTop=o.top; maxObs=o; } });
+  var far=0; wps.forEach(function(p){ far=Math.max(far,Math.hypot(p.x-w.home.x,p.z-w.home.z)); });
+  var vlos=SIM.hud.vlosLimit({ac:ac},wx), sun=SIM.sunAt(SIM.flightMs()).el;
+  var C=[]; function ck(l,t){ C.push({l:l,t:t}); }
+  if(!phHasCam(V)) ck('bad','Esta aeronave no lleva cámara: añade la «Cámara 4K con gimbal» en la pestaña de configuración.');
+  if(alt>120) ck('bad','Altura de '+alt.toFixed(0)+' m: supera el límite de 120 m de la categoría abierta. Sube el GSD o baja la altura.');
+  else if(alt<15) ck('warn','Altura de '+alt.toFixed(0)+' m: muy baja, cualquier árbol o mástil es un riesgo.');
+  else ck('ok','Altura de vuelo '+alt.toFixed(0)+' m sobre el terreno (dentro de los 120 m).');
+  if(ac.spec&&ac.spec.ceiling&&altTO>ac.spec.ceiling) ck('bad','La altura supera el techo de servicio de la aeronave ('+ac.spec.ceiling+' m).');
+  if(maxObs&&maxTop>flyY-10) ck('bad','Obstáculo en la zona ('+(maxObs.label||maxObs.kind)+', '+(maxTop-gm).toFixed(0)+' m sobre el suelo): la altura del plan no deja 10 m de margen.');
+  else if(maxObs) ck('ok','Obstáculo más alto de la zona: '+(maxTop-gm).toFixed(0)+' m, con margen suficiente.');
+  else ck('ok','Sin obstáculos dentro de la zona.');
+  if(vg>vmaxD+0.01) ck('bad','Velocidad de misión '+vg.toFixed(1)+' m/s: la aeronave sólo alcanza '+vmaxD.toFixed(0)+' m/s.');
+  if(interval<cam.tmin-0.01) ck('bad','Disparo cada '+interval.toFixed(1)+' s, pero esta cámara necesita al menos '+cam.tmin+' s. Reduce la velocidad, sube la altura o baja el solape longitudinal.');
+  else ck('ok','Intervalo entre fotos '+interval.toFixed(1)+' s (mínimo de la cámara '+cam.tmin+' s).');
+  if(blur>1.5) ck('bad','Desenfoque de movimiento de '+blur.toFixed(1)+' píxeles: las fotos saldrán movidas. Usa obturador más rápido o vuela más despacio.');
+  else if(blur>0.5) ck('warn','Desenfoque de movimiento de '+blur.toFixed(1)+' píxeles (lo recomendable es ≤ 0,5).');
+  else ck('ok','Desenfoque de movimiento '+blur.toFixed(2)+' píxeles (correcto).');
+  if(!fixed&&P.vel===0&&v<2) ck('warn','La velocidad automática sale muy baja ('+v.toFixed(1)+' m/s): la misión será larguísima. Aumenta el GSD o baja el solape.');
+  if(wt>0.8*vmaxD) ck('bad','Viento con rachas de '+wt.toFixed(0)+' m/s: la aeronave no puede mantener las líneas de vuelo.');
+  else if(wt>8) ck('warn','Viento con rachas de '+wt.toFixed(0)+' m/s: desviará las líneas y empeora los solapes.');
+  else ck('ok','Viento tolerable ('+wt.toFixed(0)+' m/s con rachas).');
+  if(fixed&&wl>0.4*v) ck('warn','Viento de cara/cola de '+wl.toFixed(0)+' m/s: la velocidad sobre el suelo cambiará mucho entre líneas.');
+  if(wx.rain>0) ck('bad','Con lluvia no se debe hacer fotogrametría (lente, motores y calidad de imagen).');
+  if(wx.vis<3) ck('bad','Visibilidad de '+wx.vis+' km: insuficiente.'); else if(wx.vis<8) ck('warn','Visibilidad de '+wx.vis+' km: las fotos saldrán con velo.');
+  if(sun<5) ck('bad','Sol a '+sun.toFixed(0)+'° o por debajo del horizonte: no hay luz para fotogrametría.');
+  else if(sun<15) ck('warn','Sol bajo ('+sun.toFixed(0)+'°): sombras muy largas que confunden la reconstrucción. Lo ideal es más de 25°.');
+  else ck('ok','Elevación del Sol '+sun.toFixed(0)+'° (buena luz).');
+  if(far>vlos) ck('bad','Hay puntos a '+far.toFixed(0)+' m del despegue y tu límite de vuelo a la vista es de '+vlos.toFixed(0)+' m: se saldría de VLOS.');
+  else ck('ok','Toda la zona está dentro del alcance visual ('+far.toFixed(0)+' m frente a '+vlos.toFixed(0)+' m).');
+  if(packs>1) ck(packs>4?'bad':'warn','La misión dura unos '+Ttot.toFixed(0)+' min y una batería da ~'+(usable*0.9).toFixed(0)+' min útiles: harán falta '+packs+' baterías ('+(packs-1)+' relevo'+(packs>2?'s':'')+') o dividir la zona.');
+  else ck('ok','Cabe en una batería: '+Ttot.toFixed(0)+' min de misión frente a '+(usable*0.9).toFixed(0)+' min útiles.');
+  var rel=gmax-gmin; if(rel>0.2*alt) ck('warn','Desnivel de '+rel.toFixed(0)+' m en la zona ('+(100*rel/alt).toFixed(0)+' % de la altura): el GSD variará mucho. Planifica siguiendo el terreno.');
+  var wf=water/gn; if(wf>0.7) ck('bad','Más del 70 % de la zona es agua: no hay puntos de enlace y no se reconstruye.'); else if(wf>0.3) ck('warn','Un '+(100*wf).toFixed(0)+' % de la zona es agua: esa parte saldrá con huecos.');
+  if(ST.people) ck('warn','Hay personas en el escenario: no se puede sobrevolar a personas no participantes.');
+  if(nPh*nL>2000) ck('warn','Volumen: '+(nPh*nL)+' fotos; el procesado será muy pesado. Divide la zona en bloques.');
+  if(I.needReg) ck('info','Esta aeronave con cámara exige registro de operador y seguro para volar.');
+  var verdict=C.some(function(c){return c.l==='bad';})?'bad':(C.some(function(c){return c.l==='warn';})?'warn':'ok');
+  return {cam:cam,camId:phCamId(V),pix:pix,gsd:gsd,alt:alt,altTO:altTO,Wg:Wg,Hg:Hg,front:front,side:side,lineSp:lineSp,lineReal:ls,phSp:phSp,nL:nL,nPh:nPh,total:nL*nPh,
+    v:v,vg:vg,vmaxD:vmaxD,vCam:vCam,vBlur:vBlur,blur:blur,interval:interval,dist:dLine+dTurn+dIn+dOut,tMis:tMis,Ttot:Ttot,usable:usable,packs:packs,
+    area:P.w*P.l/10000,relief:rel,sun:sun,far:far,vlos:vlos,wps:wps,ph:ph,cx:cx,cz:cz,ang:P.ang,w:P.w,l:P.l,home:{x:w.home.x,z:w.home.z},checks:C,verdict:verdict,fixed:fixed,
+    shutter:P.shutter,tmin:cam.tmin,gm:gm,h0:h0,front0:P.front,side0:P.side};
+};
+SIM.photoCSV=function(){
+  var p=SIM.photoPlan(), la=ST.lat, lo=ST.lon, cl=Math.cos(la*Math.PI/180), s='punto;lat;lon;altura_sobre_despegue_m;velocidad_ms;foto\n';
+  p.ph.forEach(function(q,i){ s+=(i+1)+';'+(la-(q.z-p.home.z)/111320).toFixed(7)+';'+(lo+(q.x-p.home.x)/(111320*cl)).toFixed(7)+';'+p.altTO.toFixed(1)+';'+p.vg.toFixed(1)+';1\n'; });
+  return s;
+};
+function phDownload(name,txt){ var a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['﻿'+txt],{type:'text/csv'})); a.download=name; document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },500); }
+/* ---- interfaz del hangar ---- */
+var PHV={cv:null,ras:null,rasScn:null};
+function phNum(id,lbl,val,min,max,step,unit){ return '<div class="row"><label>'+lbl+'</label><div class="val"><input type="number" id="'+id+'" value="'+val+'" min="'+min+'" max="'+max+'" step="'+step+'" style="width:90px">'+(unit?'<span>'+unit+'</span>':'')+'</div></div>'; }
+SIM.photoUI=function(){
+  var el=document.getElementById('phUI'); if(!el) return;
+  if(!SIM.photoOK()){ el.innerHTML='<div class="card" style="grid-column:1/-1"><h3>Fotogrametría</h3><div class="bd"><div class="note"><b>Este escenario no admite fotogrametría.</b> Elige uno marcado con la cinta de cámara en la pestaña Escenario (campo, bosque, montaña, costa, Guadalhorce, barrio, ciudad o muelle). Los escenarios de interior, de fantasía y el aeropuerto no sirven: o no hay terreno que cartografiar o no tiene sentido hacerlo.</div></div></div>'; return; }
+  var P=phP(), h='';
+  h+='<div><div class="card"><h3>Cámara y calidad</h3><div class="bd">';
+  h+='<div class="row"><label>Cámara</label><select id="phCam"><option value="auto">Automática (según la aeronave)</option>'+Object.keys(PHCAM).map(function(k){return '<option value="'+k+'">'+PHCAM[k].n+'</option>';}).join('')+'</select></div>';
+  h+='<div class="note" id="phCamI"></div>';
+  h+='<div class="row"><label>Fijar</label><select id="phMode"><option value="gsd">Resolución en el suelo (GSD)</option><option value="alt">Altura de vuelo</option></select></div>';
+  h+=phNum('phGsd','GSD (cm/píxel)',P.gsd,0.3,15,0.1,'cm/px')+phNum('phAlt','Altura (m)',P.alt,10,300,1,'m');
+  h+='<div class="row"><label>Solape longitudinal</label><div class="val"><input type="range" id="phFr" min="60" max="92" step="1"><span id="phFrV"></span></div></div>';
+  h+='<div class="row"><label>Solape lateral</label><div class="val"><input type="range" id="phSd" min="40" max="85" step="1"><span id="phSdV"></span></div></div>';
+  h+='<div class="row"><label>Obturador</label><select id="phSh"><option value="500">1/500 s</option><option value="1000">1/1000 s</option><option value="2000">1/2000 s</option><option value="4000">1/4000 s</option></select></div>';
+  h+=phNum('phVel','Velocidad (m/s; 0 = auto)',P.vel,0,25,0.5,'m/s');
+  h+='</div></div><div class="card"><h3>Zona a cartografiar</h3><div class="bd">';
+  h+=phNum('phE','Centro: este (m)',P.e,-1500,1500,5,'m')+phNum('phN','Centro: norte (m)',P.n,-1500,1500,5,'m')+phNum('phW','Ancho (m)',P.w,30,600,10,'m')+phNum('phL','Largo (m)',P.l,30,600,10,'m')+phNum('phAng','Rumbo de las líneas (°)',P.ang,0,179,5,'°');
+  h+='<div class="pre" style="margin:4px 0"><button class="btn" id="phCtr">Centrar frente al despegue</button><button class="btn" id="phCsv">Exportar puntos (CSV)</button></div>';
+  h+='<div class="row"><label>Misión en el próximo vuelo</label><div class="val"><input type="checkbox" id="phOn"><span>Vuelo manual guiado con intervalómetro</span></div></div>';
+  h+='<div class="pre" style="margin:4px 0"><button class="btn" id="phRep">Ver informe del último vuelo</button></div>';
+  h+='<div class="note">Datos de las cámaras aproximados, con fines didácticos. Aquí se <b>valora</b> si la misión automática sería viable con estos parámetros; el vuelo lo haces tú a mano, con las líneas y las fotos guiadas en el minimapa.</div>';
+  h+='</div></div></div>';
+  h+='<div><div class="card"><h3>Vista previa</h3><div class="bd"><canvas id="phCv" width="420" height="420" style="width:100%;max-width:420px;border:1px solid var(--line2);cursor:crosshair"></canvas><div class="note">Pulsa en el mapa para colocar el centro de la zona. Amarillo = despegue, naranja = líneas de vuelo, puntos negros = fotos.</div></div></div>';
+  h+='<div class="card"><h3>Resultado del plan</h3><div class="bd" id="phRes"></div></div></div>';
+  el.innerHTML=h;
+  var $p=function(i){return document.getElementById(i);};
+  $p('phCam').value=P.cam; $p('phMode').value=P.mode; $p('phSh').value=String(P.shutter); $p('phFr').value=P.front; $p('phSd').value=P.side; $p('phOn').checked=!!P.on;
+  function upd(){ SIM.save(); phRes(); }
+  function bindN(id,key,f){ $p(id).onchange=function(){ var v=+$p(id).value; if(!isFinite(v)) v=PHDEF[key]; var a=$p(id); v=Math.max(+a.min,Math.min(+a.max,v)); a.value=v; phP()[key]=f?f(v):v; upd(); }; }
+  bindN('phGsd','gsd'); bindN('phAlt','alt'); bindN('phVel','vel'); bindN('phE','e'); bindN('phN','n'); bindN('phW','w'); bindN('phL','l'); bindN('phAng','ang');
+  $p('phCam').onchange=function(){ phP().cam=$p('phCam').value; upd(); };
+  $p('phMode').onchange=function(){ phP().mode=$p('phMode').value; upd(); };
+  $p('phSh').onchange=function(){ phP().shutter=+$p('phSh').value; upd(); };
+  $p('phFr').oninput=function(){ phP().front=+$p('phFr').value; upd(); };
+  $p('phSd').oninput=function(){ phP().side=+$p('phSd').value; upd(); };
+  $p('phOn').onchange=function(){ phP().on=$p('phOn').checked; SIM.save(); };
+  $p('phCtr').onclick=function(){ var P=phP(); P.e=0; P.n=Math.round(Math.max(P.l,P.w)/2+40); $p('phE').value=P.e; $p('phN').value=P.n; upd(); };
+  $p('phCsv').onclick=function(){ phDownload('fotogrametria_puntos.csv',SIM.photoCSV()); };
+  $p('phRep').onclick=function(){ if(PH.last) phReport(PH.last,true); else { var b=$p('phRep'); b.textContent='Aún no hay ningún vuelo con misión'; setTimeout(function(){ b.textContent='Ver informe del último vuelo'; },2200); } };
+  PHV.cv=$p('phCv'); PHV.cv.onclick=function(e){ var r=PHV.cv.getBoundingClientRect(), v=PHV.view; if(!v) return; var x=(e.clientX-r.left)/r.width*PHV.cv.width, y=(e.clientY-r.top)/r.height*PHV.cv.height, w=phWorld(), P=phP();
+    var wx=v.cx+(x/PHV.cv.width-0.5)*2*v.half, wz=v.cz+(y/PHV.cv.height-0.5)*2*v.half; P.e=Math.round((wx-w.home.x)/5)*5; P.n=Math.round(-(wz-w.home.z)/5)*5; $p('phE').value=P.e; $p('phN').value=P.n; upd(); };
+  phRes();
+};
+function phRes(){
+  var el=document.getElementById('phRes'); if(!el||!SIM.photoOK()) return; var p=SIM.photoPlan(), P=phP();
+  document.getElementById('phGsd').disabled=(P.mode!=='gsd'); document.getElementById('phAlt').disabled=(P.mode!=='alt');
+  document.getElementById('phFrV').textContent=P.front+' %'; document.getElementById('phSdV').textContent=P.side+' %';
+  document.getElementById('phCamI').textContent='Sensor '+p.cam.sw+' mm de ancho · '+p.cam.iw+'×'+p.cam.ih+' px · focal '+p.cam.f+' mm · disparo mínimo cada '+p.cam.tmin+' s';
+  function c(l,v){ return '<div><label>'+l+'</label><b>'+v+'</b></div>'; }
+  var vt={ok:['VIABLE','#1b7a3a'],warn:['VIABLE CON AVISOS','#8a5500'],bad:['NO VIABLE','#b3261e']}[p.verdict];
+  var h='<div style="font:700 16px/1.2 Arial;letter-spacing:.06em;color:'+vt[1]+';margin-bottom:6px">'+vt[0]+'</div><div class="cells" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px 10px;font-size:12px">'
+   +c('GSD',(p.gsd*100).toFixed(2)+' cm/px')+c('Altura',p.alt.toFixed(0)+' m')+c('Huella',p.Wg.toFixed(0)+'×'+p.Hg.toFixed(0)+' m')
+   +c('Entre líneas',p.lineReal.toFixed(0)+' m')+c('Entre fotos',p.phSp.toFixed(1)+' m')+c('Líneas',p.nL)
+   +c('Fotos',p.total)+c('Velocidad',p.vg.toFixed(1)+' m/s')+c('Intervalo',p.interval.toFixed(1)+' s')
+   +c('Distancia',(p.dist/1000).toFixed(2)+' km')+c('Duración',p.Ttot.toFixed(0)+' min')+c('Baterías',p.packs)
+   +c('Superficie',p.area.toFixed(1)+' ha')+c('Desenfoque',p.blur.toFixed(2)+' px')+c('Rango de fotos',p.fixed?'—':'≤ '+p.vCam.toFixed(1)+' m/s')+'</div>';
+  h+='<ul style="list-style:none;margin:8px 0 0;padding:0;font-size:12px;line-height:1.4">'+p.checks.map(function(k){ var col={ok:'#1b7a3a',warn:'#8a5500',bad:'#b3261e',info:'#0b6aa8'}[k.l], ic={ok:'✔',warn:'▲',bad:'✖',info:'ℹ'}[k.l]; return '<li style="margin:3px 0;color:var(--ink)"><b style="color:'+col+'">'+ic+'</b> '+k.t+'</li>'; }).join('')+'</ul>';
+  el.innerHTML=h; phPreview(p);
+}
+function phPreview(p){
+  var cv=PHV.cv; if(!cv) return; var w=phWorld(), g=cv.getContext('2d'), S=cv.width, ext=SIM.SCN_EXT[ST.scn];
+  if(PHV.rasScn!==ST.scn){ PHV.ras=SIM.mapRaster(w,420,ext); PHV.rasScn=ST.scn; }
+  var half=Math.max(120,Math.min(ext,1.5*Math.max(p.w,p.l)+60)), cx=p.cx, cz=p.cz;
+  /* la vista incluye el despegue si cabe */
+  var dh=Math.max(Math.abs(p.home.x-cx),Math.abs(p.home.z-cz)); if(dh+40<ext) half=Math.max(half,Math.min(ext,dh+50));
+  PHV.view={cx:cx,cz:cz,half:half}; var r=PHV.ras, step=r.step, k=S/(2*half);
+  g.fillStyle='#d8dde2'; g.fillRect(0,0,S,S); g.imageSmoothingEnabled=true;
+  g.drawImage(r.canvas,(cx-half+ext)/step,(cz-half+ext)/step,2*half/step,2*half/step,0,0,S,S);
+  function X(x){return (x-cx+half)*k;} function Z(z){return (z-cz+half)*k;}
+  /* huellas de las fotos (muy transparentes) */
+  g.save(); g.translate(X(cx),Z(cz)); g.rotate(p.ang*Math.PI/180);
+  g.fillStyle='rgba(11,106,168,.10)'; g.strokeStyle='rgba(11,106,168,.9)'; g.lineWidth=2; g.fillRect(-p.w/2*k,-p.l/2*k,p.w*k,p.l*k); g.strokeRect(-p.w/2*k,-p.l/2*k,p.w*k,p.l*k); g.restore();
+  g.strokeStyle='#e2552d'; g.lineWidth=1.5; g.beginPath(); p.wps.forEach(function(q,i){ if(i===0) g.moveTo(X(q.x),Z(q.z)); else g.lineTo(X(q.x),Z(q.z)); }); g.stroke();
+  g.fillStyle='#14283a'; var every=Math.max(1,Math.ceil(p.ph.length/260)); p.ph.forEach(function(q,i){ if(i%every) return; g.fillRect(X(q.x)-1.5,Z(q.z)-1.5,3,3); });
+  g.setLineDash([5,4]); g.strokeStyle='#c27a00'; g.beginPath(); g.moveTo(X(p.home.x),Z(p.home.z)); g.lineTo(X(p.wps[0].x),Z(p.wps[0].z)); g.stroke(); g.setLineDash([]);
+  g.fillStyle='#f5c842'; g.strokeStyle='#14283a'; g.lineWidth=2; g.beginPath(); g.arc(X(p.home.x),Z(p.home.z),6,0,6.3); g.fill(); g.stroke();
+  g.fillStyle='#14283a'; g.font='bold 11px Arial'; g.fillText('N ↑',6,14); var sc=Math.pow(10,Math.floor(Math.log10(half*0.6))); g.fillRect(S-12-sc*k,S-14,sc*k,3); g.fillText(sc+' m',S-12-sc*k,S-18);
+}
+/* ---- misión en vuelo ---- */
+function phInit(Fo){
+  PH.F=Fo||PH.F;
+  PH.run=false; PH.shots=[]; PH.done=false; PH.c1=PH.c3=0; PH.lastX=null; PH.lastT=-9; PH.cov=null;
+  var hud=document.getElementById('phHud'); if(hud) hud.style.display='none';
+  var P=phP(); if(!P.on||!SIM.photoOK()) return;
+  var p=SIM.photoPlan(); PH.plan=p;
+  var cell=Math.max(2,Math.sqrt(p.w*p.l/45000)), gw=Math.ceil(p.w/cell), gh=Math.ceil(p.l/cell), cvv=document.createElement('canvas'); cvv.width=gw; cvv.height=gh;
+  PH.cov={cell:cell,gw:gw,gh:gh,cnt:new Uint8Array(gw*gh),cv:cvv,g:cvv.getContext('2d')}; PH.nCell=gw*gh; PH.run=true; phHud();
+}
+function phCell(c){ var s=c>=5?[47,143,74]:(c>=3?[143,191,106]:(c>=1?[230,168,0]:[192,57,43])); return s; }
+function phShoot(){
+  var F=PH.F; if(!F) return;
+  var p=PH.plan, cv=PH.cov, agl=F.agl(), gsd=agl*p.pix/ (p.cam.f/1000*1000) ;
+  gsd=agl*p.pix/p.cam.f; var Wg=gsd*p.cam.iw, Hg=gsd*p.cam.ih, hd=F.yaw, v=F.hspeed(), blur=v/p.shutter/gsd;
+  var sx=Math.sin(hd), sz=-Math.cos(hd), rx=Math.cos(hd), rz=Math.sin(hd), A=p.ang*Math.PI/180, ux=Math.cos(A), uz=Math.sin(A), dx=Math.sin(A), dz=-Math.cos(A);
+  var tx=F.pos.x-p.cx, tz=F.pos.z-p.cz, u0=tx*ux+tz*uz, y0=-(tx*dx+tz*dz), inA=Math.abs(u0)<=p.w/2+Wg/4&&Math.abs(y0)<=p.l/2+Hg/2;
+  var R=Math.hypot(Wg,Hg)/2, i0=Math.max(0,Math.floor((u0-R+p.w/2)/cv.cell)), i1=Math.min(cv.gw-1,Math.floor((u0+R+p.w/2)/cv.cell)), j0=Math.max(0,Math.floor((y0-R+p.l/2)/cv.cell)), j1=Math.min(cv.gh-1,Math.floor((y0+R+p.l/2)/cv.cell));
+  for(var j=j0;j<=j1;j++)for(var i=i0;i<=i1;i++){
+    var u=-p.w/2+(i+0.5)*cv.cell, yy=-p.l/2+(j+0.5)*cv.cell, wx=p.cx+u*ux-yy*dx-F.pos.x, wz=p.cz+u*uz-yy*dz-F.pos.z;
+    var al=wx*sx+wz*sz, ac=wx*rx+wz*rz;
+    if(Math.abs(ac)<=Wg/2&&Math.abs(al)<=Hg/2){ var id=j*cv.gw+i, c=cv.cnt[id]; if(c<255){ cv.cnt[id]=++c; if(c===1) PH.c1++; if(c===3) PH.c3++; var s=phCell(c); cv.g.fillStyle='rgba('+s[0]+','+s[1]+','+s[2]+',.55)'; cv.g.fillRect(i,j,1,1); } } }
+  PH.shots.push({t:F.t,x:F.pos.x,z:F.pos.z,agl:agl,amsl:F.pos.y,v:v,hd:hd*180/Math.PI,gsd:gsd,blur:blur,inA:inA,Wg:Wg,Hg:Hg});
+  PH.lastX=F.pos.x; PH.lastZ=F.pos.z; PH.lastT=F.t; AUD.event('shot'); phHud();
+}
+function phTick(dt){
+  var F=PH.F; if(!F) return;
+  if(!PH.run||PH.done) return; var p=PH.plan;
+  if(F.status==='crashed'){ PH.done=true; PH.run=false; if(PH.shots.length) phFinish(); return; }
+  var fl=(F.status==='flying'), agl=F.agl();
+  if(fl&&agl>=5){
+    var gsd=agl*p.pix/p.cam.f, Wg=gsd*p.cam.iw, Hg=gsd*p.cam.ih, sp=Hg*(1-p.front), A=p.ang*Math.PI/180, tx=F.pos.x-p.cx, tz=F.pos.z-p.cz,
+        u=tx*Math.cos(A)+tz*Math.sin(A), vv=tx*Math.sin(A)-tz*Math.cos(A);
+    if(Math.abs(u)<=p.w/2+Wg/4&&Math.abs(vv)<=p.l/2+Hg/2&&F.t-PH.lastT>=p.tmin&&(PH.lastX===null||Math.hypot(F.pos.x-PH.lastX,F.pos.z-PH.lastZ)>=sp)) phShoot();
+  }
+  if(PH.shots.length>2&&F.status==='landed'&&F.t-PH.lastT>3) phFinish();
+  if(F.t-PH.hudT>0.4){ PH.hudT=F.t; phHud(); }
+}
+function phHud(){
+  var F=PH.F; if(!F) return;
+  var el=document.getElementById('phHud'); if(!el) return; if(!PH.run||SIM.hangarOpen()){ el.style.display='none'; return; }
+  var p=PH.plan, cov=PH.nCell?Math.round(100*PH.c3/PH.nCell):0, agl=F.agl(), ok=Math.abs(agl-p.alt)<=0.12*p.alt;
+  el.style.display='block'; el.innerHTML='<div class="ct">Fotogrametría · '+p.cam.n.split(' (')[0]+'</div><div class="cr"><div class="cn">'+PH.shots.length+'<small> fotos</small></div><div class="cn">'+cov+'<small> % cobertura</small></div></div>'
+   +'<div class="nxt">Altura <b style="color:'+(ok?'var(--green)':'var(--red)')+'">'+Math.round(agl)+' m</b> (plan '+Math.round(p.alt)+' m) · Vel <b style="color:'+(F.hspeed()>p.vg*1.15?'var(--red)':'inherit')+'">'+F.hspeed().toFixed(1)+'</b> / '+p.vg.toFixed(1)+' m/s</div>'
+   +'<div class="nxt" style="pointer-events:auto"><button class="btn" id="phEnd" style="padding:2px 10px;font-size:11px">Terminar y ver informe</button></div>';
+  var b=document.getElementById('phEnd'); if(b) b.onclick=function(){ if(PH.shots.length) phFinish(); else { PH.run=false; PH.done=true; el.style.display='none'; } };
+}
+SIM.photoDrawMap=function(g,k){
+  if(!PH.run||!PH.plan) return; var p=PH.plan, cv=PH.cov;
+  g.save(); g.translate(p.cx,p.cz); g.rotate(p.ang*Math.PI/180);
+  g.imageSmoothingEnabled=false; g.drawImage(cv.cv,-p.w/2,-p.l/2,p.w,p.l);
+  g.strokeStyle='#0b6aa8'; g.lineWidth=2/k; g.strokeRect(-p.w/2,-p.l/2,p.w,p.l); g.restore();
+  g.strokeStyle='rgba(226,85,45,.85)'; g.lineWidth=1.2/k; g.setLineDash([6/k,4/k]); g.beginPath(); p.wps.forEach(function(q,i){ if(i===0) g.moveTo(q.x,q.z); else g.lineTo(q.x,q.z); }); g.stroke(); g.setLineDash([]);
+  g.fillStyle='#14283a'; PH.shots.forEach(function(s){ g.fillRect(s.x-1.2/k,s.z-1.2/k,2.4/k,2.4/k); });
+};
+/* ---- informe ---- */
+function phFinish(){
+  var F=PH.F; if(!F) return;
+  PH.done=true; PH.run=false; var el=document.getElementById('phHud'); if(el) el.style.display='none';
+  var p=PH.plan, cv=PH.cov, n=cv.gw*cv.gh, hist=[0,0,0,0], sum=0;
+  for(var i=0;i<n;i++){ var c=cv.cnt[i]; sum+=c; hist[c===0?0:(c<3?1:(c<5?2:3))]++; }
+  var shots=PH.shots, ins=shots.filter(function(s){return s.inA;}).length, gs=0, bl=0, blOk=0;
+  shots.forEach(function(s){ gs+=s.gsd; bl+=s.blur; if(s.blur<=0.5) blOk++; });
+  var R={plan:p,grid:{gw:cv.gw,gh:cv.gh,cell:cv.cell,cnt:Array.prototype.slice.call(cv.cnt)},shots:shots.slice(),n:shots.length,
+    cov3:(hist[2]+hist[3])/n, cov1:1-hist[0]/n, gaps:hist[0]/n, cov5:hist[3]/n, mean:sum/n, gsd:shots.length?gs/shots.length:0, blur:shots.length?bl/shots.length:0, blOk:shots.length?blOk/shots.length:0,
+    outside:shots.length?1-ins/shots.length:0, t:shots.length?(shots[shots.length-1].t-shots[0].t):0, status:F.status};
+  var gsdE=R.gsd?Math.abs(R.gsd/p.gsd-1):1;
+  R.score=Math.max(0,Math.min(10,7*Math.min(1,R.cov3/0.95)+1.5*Math.max(0,1-gsdE/0.5)+1.5*R.blOk-(R.outside>0.3?1:0)-(F.status==='crashed'?3:0)));
+  PH.last=R; phReport(R,false);
+}
+function phReport(R,fromHangar){
+  var p=R.plan, d=document.getElementById('phDlg'); if(!d) return;
+  var f=function(x,n){return (100*x).toFixed(n===undefined?0:n)+' %';};
+  var nota=R.score>=8.5?'Excelente: el modelo saldría limpio.':(R.score>=6.5?'Buen trabajo: se reconstruiría con pequeños huecos.':(R.score>=5?'Aprobado justo: habría zonas sin reconstruir.':'Insuficiente: habría que repetir el vuelo.'));
+  var lines=[];
+  if(R.gaps>0.05) lines.push('Huecos: '+f(R.gaps)+' de la zona sin ninguna foto; revisa los huecos rojos y repite esas líneas.');
+  if(R.cov3<0.9) lines.push('Cobertura baja: '+f(R.cov3)+' de la zona sale en 3 o más fotos, el mínimo para triangular bien.');
+  if(R.blOk<0.8) lines.push('Desenfoque: '+f(1-R.blOk)+' de las fotos sale movido; vuela más despacio o usa obturador más rápido.');
+  if(Math.abs(R.gsd/p.gsd-1)>0.2) lines.push('El GSD real ('+(R.gsd*100).toFixed(1)+' cm/px) se aleja del previsto ('+(p.gsd*100).toFixed(1)+' cm/px): mantén la altura del plan ('+p.alt.toFixed(0)+' m).');
+  if(R.outside>0.3) lines.push('Fuera de zona: '+f(R.outside)+' de las fotos se hizo fuera del área.');
+  if(R.status==='crashed') lines.push('El vuelo terminó en siniestro.');
+  if(!lines.length) lines.push('Sin incidencias destacables.');
+  d.innerHTML='<h2>INFORME DE FOTOGRAMETRÍA</h2><div class="phg"><canvas id="phRc" width="300" height="300"></canvas><div class="pht">'
+   +'<div class="phs">'+R.score.toFixed(1)+'<small> / 10</small></div><div class="phn">'+nota+'</div>'
+   +'<table><tr><td>Fotos</td><td><b>'+R.n+'</b> (previstas '+p.total+')</td></tr><tr><td>Cobertura ≥ 3 fotos</td><td><b>'+f(R.cov3)+'</b></td></tr><tr><td>Cobertura ≥ 5 fotos</td><td><b>'+f(R.cov5)+'</b></td></tr><tr><td>Huecos sin foto</td><td><b>'+f(R.gaps)+'</b></td></tr>'
+   +'<tr><td>Solape medio</td><td><b>'+R.mean.toFixed(1)+'</b> fotos por punto</td></tr><tr><td>GSD real / previsto</td><td><b>'+(R.gsd*100).toFixed(2)+'</b> / '+(p.gsd*100).toFixed(2)+' cm/px</td></tr><tr><td>Desenfoque medio</td><td><b>'+R.blur.toFixed(2)+'</b> px ('+f(R.blOk)+' nítidas)</td></tr>'
+   +'<tr><td>Fotos fuera de la zona</td><td><b>'+f(R.outside)+'</b></td></tr><tr><td>Tiempo de captura</td><td><b>'+Math.floor(R.t/60)+' min '+Math.round(R.t%60)+' s</b> (plan '+p.Ttot.toFixed(0)+' min)</td></tr></table></div></div>'
+   +'<div class="phl"><span style="color:#c0392b">■</span> sin foto <span style="color:#e6a800">■</span> 1–2 <span style="color:#8fbf6a">■</span> 3–4 <span style="color:#2f8f4a">■</span> 5 o más</div>'
+   +'<ul class="phw">'+lines.map(function(t){return '<li>'+t+'</li>';}).join('')+'</ul>'
+   +'<div class="phb"><button class="btn" id="phRcsv">Descargar fotos (CSV)</button><button class="btn pri" id="phRx">Cerrar</button></div>';
+  var cv=document.getElementById('phRc'), g=cv.getContext('2d'), S=300, gr=R.grid, sc=Math.min(S/p.w,S/p.l); cv.width=Math.round(p.w*sc); cv.height=Math.round(p.l*sc);
+  g=cv.getContext('2d'); g.fillStyle='#e9ecef'; g.fillRect(0,0,cv.width,cv.height);
+  for(var j=0;j<gr.gh;j++)for(var i=0;i<gr.gw;i++){ var c=gr.cnt[j*gr.gw+i], s=phCell(c); g.fillStyle='rgb('+s[0]+','+s[1]+','+s[2]+')'; g.fillRect(i*gr.cell*sc,j*gr.cell*sc,gr.cell*sc+1,gr.cell*sc+1); }
+  var A=p.ang*Math.PI/180, ux=Math.cos(A), uz=Math.sin(A), dx=Math.sin(A), dz=-Math.cos(A);
+  g.fillStyle='rgba(20,40,58,.85)'; R.shots.forEach(function(s){ var tx=s.x-p.cx, tz=s.z-p.cz, u=tx*ux+tz*uz, y=-(tx*dx+tz*dz); g.fillRect((u+p.w/2)*sc-1,(y+p.l/2)*sc-1,2.4,2.4); });
+  document.getElementById('phRx').onclick=function(){ d.style.display='none'; };
+  document.getElementById('phRcsv').onclick=function(){ var s='n;t_s;x_m;z_m;agl_m;amsl_m;vel_ms;rumbo_deg;gsd_cm;desenfoque_px;dentro\n'; R.shots.forEach(function(q,i){ s+=(i+1)+';'+q.t.toFixed(1)+';'+q.x.toFixed(1)+';'+q.z.toFixed(1)+';'+q.agl.toFixed(1)+';'+q.amsl.toFixed(1)+';'+q.v.toFixed(1)+';'+q.hd.toFixed(0)+';'+(q.gsd*100).toFixed(2)+';'+q.blur.toFixed(2)+';'+(q.inA?1:0)+'\n'; }); phDownload('fotogrametria_fotos.csv',s); };
+  d.style.display='block';
+}
+SIM.photoInit=phInit; SIM.photoTick=phTick; SIM.photoHud=phHud;
+
 /* ===== INTERFAZ (B): HUD, alertas, normativa, mapa, registro ===== */
 (function(){
 var $=function(id){return document.getElementById(id);};
@@ -5712,6 +6070,7 @@ H.drawMap=function(f,w,d,wx){
   /* estela */
   if(ST.trail && H.log.length>1){ g.strokeStyle='#e2552d'; g.lineWidth=2/k; g.beginPath(); H.log.forEach(function(s,i){ if(i%2) return; if(i===0)g.moveTo(s.x,s.z); else g.lineTo(s.x,s.z); }); g.lineTo(f.pos.x,f.pos.z); g.stroke(); }
   if(SIM.compDrawMap) SIM.compDrawMap(g,k);
+  if(SIM.photoDrawMap) SIM.photoDrawMap(g,k);
   /* casa */
   g.fillStyle='#f5c842'; g.strokeStyle='#14283a'; g.lineWidth=2/k; g.beginPath(); g.arc(hm.x,hm.z,5/k,0,6.3); g.fill(); g.stroke();
   /* aves, cometas y personas */
@@ -5826,7 +6185,7 @@ function newFlight(){
   keysPanel(); compInit(); resetCommon(); return true;
 }
 function resetCommon(){
-  compReset();
+  compReset(); if(SIM.photoInit) SIM.photoInit(F);
   H.logClear(); R3D.clearTrail(); cmd={pitch:0,roll:0,yaw:0,thr:0}; acc=0; landShown=false; landUp=false; hideMsg(); paused=false; syncPause();
   if(F){ var h=F.world.home; R3D.update(F,0,ropts()); }
 }
@@ -5952,7 +6311,7 @@ var deg0=Math.PI/180, wsm={x:0,z:0};
 function ropts(){ return {trail:ST.trail, zoom:zoomV, gimbal:F&&F.ac.has('camhd')&&!F.ac.has('camfpv'), fpvStab:!!(F&&F.ac.cm&&F.ac.cm.fpvStab&&F.fMode!=='manual'), fpvHS:!!(ST.fpv&&ST.fpv.hs), fpvAng:(F&&F.ac.cm&&F.ac.cm.fpvStab&&F.fMode==='manual')?((ST.fpv||{}).ang||0):null, windX:F?F.wcur.x:0, windZ:F?F.wcur.z:0, topH:90}; }
 
 function openHangar(){ hangarOpen=true; AUD.hush(); $('hangar').style.display='flex'; paused=true; syncPause(); SIM.validate(); $('bFly').textContent=(F&&sig===sigNow())?'Aplicar y continuar ▶':'Volar ▶'; }
-function closeHangar(){ hangarOpen=false; $('hangar').style.display='none'; }
+function closeHangar(){ hangarOpen=false; $('hangar').style.display='none'; if(SIM.photoHud) SIM.photoHud(); }
 function flyPressed(){
   var same=F&&sig===sigNow();
   if(same){ applyLive(); closeHangar(); paused=false; syncPause(); }
@@ -6123,6 +6482,7 @@ function toggleHelp(){
   +'<h4>Calidad gráfica</h4><p>El botón «Gráficos» de la barra superior cambia el nivel: Auto, Bajo, Medio, Alto y Ultra. Auto empieza en Alto y baja solo si el equipo no llega a unos 27 fotogramas por segundo.</p><p>Bajo: sin sombras ni reflejos, para equipos modestos. Medio: sombras del sol, nubes y reflejos. Alto: sombras más nítidas, más detalle y mejores materiales. Ultra: máxima resolución de sombras y de pantalla. También se puede fijar desde la dirección de la página añadiendo ?gfx=low, med, high o ultra.</p>'
   +'<h4>Simulación</h4><table><tr><td><kbd>Espacio</kbd> / <kbd>P</kbd></td><td>Pausa: congela todo y muestra los datos del instante (CSV, paso a paso con <kbd>N</kbd>).</td></tr><tr><td><kbd>R</kbd></td><td>Reiniciar el vuelo (mismas condiciones).</td></tr><tr><td><kbd>Esc</kbd></td><td>Hangar: cambiar dron, meteorología, escenario y radio.</td></tr><tr><td><kbd>T</kbd></td><td>Velocidad de simulación 1× / 2× / ½× / ¼×.</td></tr><tr><td><kbd>C</kbd> o <kbd>1</kbd>–<kbd>4</kbd></td><td>Cámara: a la vista · FPV · seguimiento · cenital. <kbd>Z</kbd> zoom en vista a la vista.</td></tr><tr><td><kbd>M</kbd> <kbd>+</kbd> <kbd>−</kbd></td><td>Zoom del mapa (también con la rueda).</td></tr><tr><td><kbd>I</kbd> <kbd>U</kbd> <kbd>G</kbd> <kbd>L</kbd></td><td>Inspector · ocultar paneles · estela · panel de distancias LiDAR.</td></tr><tr><td><kbd>K</kbd></td><td>Sonido sí / no (motores, viento, lluvia, impactos y avisos; sintetizado, se silencia en pausa).</td></tr></table>'
   +'<h4>Emisora real (USB, cable o dongle)</h4><p>Conecta la emisora en modo «USB Joystick (HID)», abre la pestaña <b>Emisora real</b> del hangar y mueve un stick: se detecta sola. Elige un perfil (AETR, TAER o mando de consola), pulsa «Detectar» para asignar ejes e interruptores y «Calibrar» si hace falta. Chrome o Edge recomendados.</p>'
+  +'<h4>Fotogrametría</h4><p>En los escenarios con la cinta de cámara, la pestaña <b>Fotogrametría</b> del hangar planifica un levantamiento: eliges cámara, GSD (o altura), solapes y la zona, y el simulador calcula líneas, fotos, velocidad, duración y baterías, y te dice si la misión automática sería <b>viable</b> (obstáculos, viento, Sol, VLOS, desenfoque, intervalo de la cámara…). Si activas «Misión en el próximo vuelo», vuelas tú a mano: el intervalómetro dispara solo dentro de la zona, el minimapa muestra las líneas y la cobertura, y al aterrizar (o con «Terminar y ver informe») sale el informe con mapa de cobertura, GSD real, desenfoque y nota.</p>'
   +'<h4>Modo competición</h4><p>Activa «Modo competición» en la pestaña <b>Escenario</b> y elige de 1 a 20 aros. Pasa por ellos en orden: el siguiente brilla en amarillo, los superados se ponen verdes y las flechas te indican hacia dónde está. El cronómetro empieza al despegar y se para en el último aro. Se guarda tu mejor tiempo por escenario y número de aros. <kbd>R</kbd> repite el mismo recorrido; un vuelo nuevo genera otro.</p>'
   +'<h4>Sistemas de a bordo</h4><table><tr><td><kbd>H</kbd></td><td>Regreso a casa (RTH) on/off. Requiere GNSS.</td></tr><tr><td><kbd>B</kbd></td><td>Aterrizaje suave asistido en el punto donde estés (también fuera de pista). Mover el acelerador lo cancela.</td></tr><tr><td><kbd>Q</kbd></td><td>Alternar GPS ↔ ATTI (multirrotores y tail-sitter en VTOL).</td></tr><tr><td><kbd>F</kbd></td><td>Provocar un fallo de motor (observa la redundancia de 3, 4, 6 y 8 rotores).</td></tr><tr><td><kbd>X</kbd></td><td>Paracaídas (si está instalado): corta motores y frena la caída.</td></tr></table>'
   +'<h4>Escenario y siniestros</h4><p><b>Tendidos eléctricos y torres de telefonía</b> (pestaña Escenario): torres de celosía con cables (muy difíciles de ver desde lejos: fíjate en las torres y supón que entre ellas hay cables) y mástiles de telefonía con baliza roja. Chocar con un cable o una torre es siniestro. <b>Vehículos circulando</b>: coches, furgonetas, autobuses, camiones y tractores que van y vienen por calles o caminos; los sensores de obstáculos los ven y chocar con ellos es siniestro.</p><p>Junto a la plataforma de despegue está el <b>operador</b> con la emisora (y con gafas cuando vuelas en FPV). Las <b>azoteas y cubiertas planas</b> de todos los edificios son aterrizables: posarte con suavidad sobre ellas cuenta como aterrizaje, no como siniestro. Si caes al <b>agua</b> el dron salpica y se hunde; un impacto contra el suelo o un edificio a más de <b>12 m/s (≈43 km/h)</b> hace que la aeronave <b>explote</b> y quede destruida. Las personas, gaviotas y cometas son obstáculos reales: chocar con ellos es siniestro. El botón <b>Tema</b> del hangar alterna entre el aspecto de consola oscura y el claro.</p>'
@@ -6215,10 +6575,10 @@ function frame(ts){
   var simDt=0;
   if(!paused){
     acc+=dtR*speed; var n=0;
-    while(acc>=HZ&&n<14){ slew(HZ); world.update(F.t); F.step(HZ,cmd); compTick(HZ); acc-=HZ; n++; simDt+=HZ; }
+    while(acc>=HZ&&n<14){ slew(HZ); world.update(F.t); F.step(HZ,cmd); compTick(HZ); if(SIM.photoTick) SIM.photoTick(HZ); acc-=HZ; n++; simDt+=HZ; }
     if(n>=14) acc=0;
   } else if(stepOnce){
-    for(var i=0;i<12;i++){ slew(HZ); world.update(F.t); F.step(HZ,cmd); compTick(HZ); } stepOnce=false; simDt=0; renderInspector();
+    for(var i=0;i<12;i++){ slew(HZ); world.update(F.t); F.step(HZ,cmd); compTick(HZ); if(SIM.photoTick) SIM.photoTick(HZ); } stepOnce=false; simDt=0; renderInspector();
   }
   R3D.update(F,paused?0:dtR*speed,ropts());
   if(COMP.st) R3D.updateRings(COMP.st.idx,COMP.st.done,ts);
@@ -6272,7 +6632,7 @@ SIM.boot=function(){
   SD.setPlanet(SIM.planetOf(ST.scn)); world=SW.make(ST.scn); R3D.loadWorld(world); world.timeMs0=SIM.flightMs(); SIM.syncTod(); world.sun=SIM.sunAt(world.timeMs0); R3D.setWeather(Object.assign({},ST.wx),ST.tod,world.sun);
   $('bFly').textContent='Volar ▶';
   requestAnimationFrame(frame);
-  window.SIMDBG={get F(){return F;},get world(){return world;},cmd:cmd,keys:keys,start:function(){flyPressed();},ST:ST,get COMP(){return COMP;},hud:H,setCam:setCam,pause:togglePause};
+  window.SIMDBG={get F(){return F;},get world(){return world;},cmd:cmd,keys:keys,start:function(){flyPressed();},ST:ST,get COMP(){return COMP;},get PH(){return PH;},hud:H,setCam:setCam,pause:togglePause};
 };
 $('tabs').addEventListener('click',function(){});
 document.addEventListener('DOMContentLoaded',function(){ SIM.boot(); });

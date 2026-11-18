@@ -76,6 +76,18 @@ A drone simulator that runs in the browser, with nothing to install and no inter
 
 ![Completed course with split times](img/competicion-fin.png)
 
+**Photogrammetry** (scenarios with the green camera ribbon: open field, forest, mountain, coast, Guadalhorce, neighbourhood, city and quay):
+- **Planner** in the hangar: pick a camera (Mini 4 Pro, Air 3S, Mavic 4 Pro, Matrice 350 + P1, eBee X or generic ones), GSD or height, forward and side overlap, shutter and the area (placed by clicking the map). It works out lines, photos, speed, interval, distance, duration and batteries.
+- **Feasibility verdict** for the automatic mission without flying it: maximum height, obstacles and terrain relief, wind and gusts, Sun, rain and visibility, VLOS, motion blur, camera minimum interval, water and people in the area, batteries needed. Export the points as CSV.
+- **Guided manual mission**: you fly; an intervalometer fires only inside the area based on the real height and speed, and the minimap shows the lines and the coverage live.
+- **Report** on landing: coverage map (0, 1–2, 3–4, 5 or more photos), gaps, mean overlap, actual vs planned GSD, blur, photos outside the area and a mark out of 10, with a CSV of the photo log.
+
+![Photogrammetry planner](img/fotogrametria-plan.png)
+
+![Photogrammetry mission in flight](img/fotogrametria-vuelo.png)
+
+![Photogrammetry report](img/fotogrametria-informe.png)
+
 **Realistic graphics with a quality selector**
 - Physically based lighting with real sun shadows, a sky with moving clouds, stars at night and environment reflections.
 - Detailed models of every aircraft: motors, propellers that blur when spinning, landing gear, batteries and cameras, with a specific look for each commercial drone (Tello, Mini, Air, Mavic, Avata, Matrice, eBee).

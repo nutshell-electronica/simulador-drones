@@ -75,6 +75,18 @@ Simulador de drones que funciona en el navegador, sin instalar nada y sin conexi
 
 ![Recorrido completado con tiempos parciales](img/competicion-fin.png)
 
+**Fotogrametría** (escenarios con la cinta verde de cámara: campo, bosque, montaña, costa, Guadalhorce, barrio, ciudad y muelle):
+- **Planificador** en el hangar: eliges cámara (Mini 4 Pro, Air 3S, Mavic 4 Pro, Matrice 350 + P1, eBee X o genéricas), GSD o altura, solapes longitudinal y lateral, obturador y la zona (se coloca pulsando en el mapa). Calcula líneas, fotos, velocidad, intervalo, distancia, duración y baterías.
+- **Veredicto de viabilidad** de la misión automática sin tener que volarla: altura máxima, obstáculos y desnivel del terreno, viento y rachas, Sol, lluvia y visibilidad, VLOS, desenfoque de movimiento, intervalo mínimo de la cámara, agua y personas en la zona, baterías necesarias. Exporta los puntos en CSV.
+- **Misión manual guiada**: vuelas tú; un intervalómetro dispara solo dentro de la zona según la altura y la velocidad reales, y el minimapa muestra las líneas y la cobertura en directo.
+- **Informe** al aterrizar: mapa de cobertura (0, 1–2, 3–4, 5 o más fotos), huecos, solape medio, GSD real frente al previsto, desenfoque, fotos fuera de zona y nota sobre 10, con CSV del registro de fotos.
+
+![Planificador de fotogrametría](img/fotogrametria-plan.png)
+
+![Misión de fotogrametría en vuelo](img/fotogrametria-vuelo.png)
+
+![Informe de fotogrametría](img/fotogrametria-informe.png)
+
 **Gráficos realistas con selector de calidad**
 - Iluminación física con sombras reales del sol, cielo con nubes en movimiento, estrellas de noche y reflejos del entorno.
 - Modelos detallados de todas las aeronaves: motores, hélices que se difuminan al girar, tren de aterrizaje, baterías y cámaras, con aspecto propio para cada dron comercial (Tello, Mini, Air, Mavic, Avata, Matrice, eBee).
