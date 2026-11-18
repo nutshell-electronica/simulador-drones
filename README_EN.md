@@ -37,6 +37,7 @@ A drone simulator that runs in the browser, with nothing to install and no inter
 - **Fantasy scenarios** (stylised, with their own names):
   - **Land of Cubes**: a 24 m block world with plains, hills and snowy mountains, rivers and a lake, square trees, a village, a stepped pyramid, stone pillars and floating blocks. Terrain rises in steps and water means a splashdown.
   - **Lava Fortress**: a dark castle with a central keep, corner towers, crenellated walls and a gate with a bridge over a lava moat, surrounded by lava rivers and lakes. Falling into the lava is a total loss.
+  - **Mars · Jezero crater** («FANTASY» ribbon on the card): a reddish plain with craters, rocks, dunes, three Martian bases, rovers and little green men. Air ~100 times thinner and gravity 3.71 m/s², so **only NASA's Ingenuity helicopter works** (no other drone flies there, and Ingenuity does not fly on Earth). No clouds, dark starry sky, red dust, dust storms, dust devils, Phobos, blue sunsets and shooting stars at night. No GNSS or RTH: it holds position with optical flow up to 40 m.
 - Indoors: ToF sensors, 2D LiDAR and optical flow.
 
 ![Available scenarios](img/escenarios.png)
