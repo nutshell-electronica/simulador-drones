@@ -1,5 +1,7 @@
 # SANT·SIM — Drone flight simulator for studying unmanned aircraft systems
 
+> **Frozen version (v0.19.3).** This is the last openly published version, under a non-commercial licence (see [LICENSE](LICENSE)). Development continues privately.
+
 **▶ Open the simulator: https://nutshell-electronica.github.io/simulador-drones/**
 
 > 🌐 [Versión en español → README.md](README.md)

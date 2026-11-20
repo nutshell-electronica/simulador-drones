@@ -1,5 +1,7 @@
 # SANT·SIM — Simulador de vuelo de drones para el estudio de los sistemas aéreos no tripulados
 
+> **Versión congelada (v0.19.3).** Esta es la última versión publicada abiertamente, con licencia no comercial (ver [LICENSE](LICENSE)). El desarrollo continúa en privado.
+
 **▶ Abrir el simulador: https://nutshell-electronica.github.io/simulador-drones/**
 
 > 🌐 [English version → README_EN.md](README_EN.md)

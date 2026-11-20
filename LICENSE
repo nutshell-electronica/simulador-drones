@@ -1,0 +1,20 @@
+Required Notice: Copyright (c) 2026 José Luis Guerrero Marín
+
+SANT·SIM (versión congelada v0.19.3) se publica bajo la
+PolyForm Noncommercial License 1.0.0
+https://polyformproject.org/licenses/noncommercial/1.0.0
+
+En resumen (el texto completo del enlace es el que vale):
+- Puedes usarlo, estudiarlo y modificarlo para fines NO comerciales
+  (uso personal, centros educativos, formación, investigación).
+- No puedes venderlo, incluirlo en un producto o servicio de pago,
+  ni usarlo con fines comerciales sin permiso por escrito del autor.
+- Al redistribuirlo debes conservar este aviso.
+
+Esta licencia cubre solo esta versión publicada. El desarrollo posterior
+continúa en privado y puede distribuirse con otras condiciones.
+
+Bibliotecas incluidas (licencia MIT, con sus propios avisos): three.js,
+PeerJS y qrcode-generator.
+
+Este texto no es asesoramiento legal.
