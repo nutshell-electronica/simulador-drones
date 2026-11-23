@@ -1,6 +1,6 @@
 # SANT·SIM — Drone flight simulator for studying unmanned aircraft systems
 
-> **Frozen version (v0.19.3).** This is the last openly published version, under a non-commercial licence (see [LICENSE](LICENSE)). Development continues privately.
+> **v0.20 · test version.** Published under a **non-commercial** licence (see [LICENSE](LICENSE)) so it can be tried out and feedback sent (Issues). It includes the full game mode (80 ring, landing, photo and visual-inspection challenges) with everything unlocked. Development continues privately and may be distributed under other terms.
 
 **▶ Open the simulator: https://nutshell-electronica.github.io/simulador-drones/**
 
@@ -192,7 +192,6 @@ A drone simulator that runs in the browser, with nothing to install and no inter
 ## Files
 
 - `index.html` — the simulator (self-contained).
-- `SANT_SIM_fuentes.zip` — modular source code and `build.sh` to regenerate it.
 
 ---
 
