@@ -230,6 +230,29 @@ kbd{font-family:var(--mono);font-size:10.5px;border:1px solid var(--line2);borde
 .mnH{font-weight:800;font-size:19px} .mnP{font-size:13px;color:var(--ink2);line-height:1.45;flex:1} .mnGo{font-weight:700;font-size:12px;letter-spacing:.08em;text-transform:uppercase}
 .mnSoon{border-style:dashed} .mnSoon .mnGo{color:var(--ink2)}
 #mnNote{min-height:20px;margin-top:18px;font-size:13px;color:var(--ink2)}
+
+/* pantalla inicial: cielo con nubes y un dron que cruza de vez en cuando (decorativo; se desactiva con «reducir movimiento») */
+#menu{background:linear-gradient(#8fc3ee 0%,#bfe0f6 55%,#e9f4fb 100%)}
+html.dark #menu{background:linear-gradient(#0f1f33 0%,#1d3350 60%,#2a4566 100%)}
+#mnSky{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0}
+#mnSky .cl{position:absolute;left:0;right:0;background-repeat:repeat-x}
+#mnSky .c1{top:7%;height:240px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='900' height='240' viewBox='0 0 900 240'%3E%3Cg fill='%23fff'%3E%3Cellipse cx='150' cy='150' rx='100' ry='34'/%3E%3Cellipse cx='110' cy='128' rx='55' ry='36'/%3E%3Cellipse cx='190' cy='120' rx='62' ry='42'/%3E%3Cellipse cx='235' cy='146' rx='52' ry='28'/%3E%3Cellipse cx='600' cy='80' rx='80' ry='26'/%3E%3Cellipse cx='570' cy='64' rx='42' ry='26'/%3E%3Cellipse cx='630' cy='58' rx='46' ry='30'/%3E%3Cellipse cx='700' cy='188' rx='70' ry='22'/%3E%3Cellipse cx='680' cy='174' rx='36' ry='20'/%3E%3C/g%3E%3C/svg%3E");background-size:900px 240px;opacity:.95;animation:mnDrift1 160s linear infinite}
+#mnSky .c2{top:44%;height:160px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='620' height='160' viewBox='0 0 620 160'%3E%3Cg fill='%23fff'%3E%3Cellipse cx='110' cy='100' rx='80' ry='24'/%3E%3Cellipse cx='85' cy='84' rx='38' ry='22'/%3E%3Cellipse cx='140' cy='80' rx='44' ry='28'/%3E%3Cellipse cx='430' cy='60' rx='95' ry='26'/%3E%3Cellipse cx='400' cy='42' rx='46' ry='24'/%3E%3Cellipse cx='465' cy='40' rx='52' ry='30'/%3E%3C/g%3E%3C/svg%3E");background-size:620px 160px;opacity:.7;animation:mnDrift2 95s linear infinite}
+#mnSky .c3{bottom:2%;height:240px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='900' height='240' viewBox='0 0 900 240'%3E%3Cg fill='%23fff'%3E%3Cellipse cx='150' cy='150' rx='100' ry='34'/%3E%3Cellipse cx='110' cy='128' rx='55' ry='36'/%3E%3Cellipse cx='190' cy='120' rx='62' ry='42'/%3E%3Cellipse cx='235' cy='146' rx='52' ry='28'/%3E%3Cellipse cx='600' cy='80' rx='80' ry='26'/%3E%3Cellipse cx='570' cy='64' rx='42' ry='26'/%3E%3Cellipse cx='630' cy='58' rx='46' ry='30'/%3E%3Cellipse cx='700' cy='188' rx='70' ry='22'/%3E%3Cellipse cx='680' cy='174' rx='36' ry='20'/%3E%3C/g%3E%3C/svg%3E");background-size:700px 187px;opacity:.55;animation:mnDrift3 120s linear infinite}
+html.dark #mnSky .cl{opacity:.14}
+@keyframes mnDrift1{to{background-position-x:-900px}} @keyframes mnDrift2{to{background-position-x:-620px}} @keyframes mnDrift3{to{background-position-x:-700px}}
+#mnSky .dr{position:absolute;left:0;width:110px;opacity:0;will-change:transform}
+#mnSky .dr svg{display:block;width:100%;height:auto;animation:mnBob 2.6s ease-in-out infinite}
+#mnSky .d1{top:22%;animation:mnFly 34s linear infinite 3s}
+#mnSky .d2{top:60%;width:56px;opacity:0;animation:mnFlyBack 52s linear infinite 18s}
+#mnSky .mnRot{transform-box:fill-box;transform-origin:center;animation:mnSpin .09s linear infinite}
+html.dark #mnSky .dr svg{filter:brightness(1.5)}
+@keyframes mnSpin{50%{transform:scaleX(.35)}}
+@keyframes mnBob{50%{transform:translateY(-9px) rotate(-3deg)}}
+@keyframes mnFly{0%{transform:translateX(-160px);opacity:1} 55%{transform:translateX(calc(100vw + 160px));opacity:1} 55.1%,100%{transform:translateX(calc(100vw + 160px));opacity:0}}
+@keyframes mnFlyBack{0%{transform:translateX(calc(100vw + 80px)) scaleX(-1);opacity:.85} 45%{transform:translateX(-120px) scaleX(-1);opacity:.85} 45.1%,100%{transform:translateX(-120px) scaleX(-1);opacity:0}}
+@media (prefers-reduced-motion:reduce){ #mnSky .cl,#mnSky .dr,#mnSky .dr svg,#mnSky .mnRot{animation:none} #mnSky .dr{display:none} }
+#menu .mnC,#menu .mnId,#menu #mnSnd,#menu #gmSel,#menu #mnNote{position:relative;z-index:1} #menu .mnId,#menu #mnSnd{position:absolute}
 @media (max-width:700px){ #menu .mnId b{display:none} .mnCard{padding:12px} .mnS{margin-bottom:14px} .mnP{font-size:12px} }
 @media (max-height:480px){ .mnS{margin-bottom:8px} #mnNote{margin-top:6px} .mnCard{padding:10px;gap:4px} .mnT{font-size:26px} }
 #gmSel{flex-direction:column;align-items:center;gap:14px;width:100%}
@@ -487,6 +510,7 @@ html.gm #gmTitle{display:block} html.gm #top .ttl{display:none} .mini #gmTitle{d
 <div id="app">
 <div id="gmRes" style="display:none"></div>
 <div id="menu" style="display:none">
+  <div id="mnSky" aria-hidden="true"><i class="cl c1"></i><i class="cl c2"></i><i class="cl c3"></i><div class="dr d1"><svg viewBox='0 0 120 54' xmlns='http://www.w3.org/2000/svg'><g stroke='#1f2a37' stroke-width='3' stroke-linecap='round'><line x1='38' y1='30' x2='12' y2='14'/><line x1='82' y1='30' x2='108' y2='14'/></g><rect x='36' y='26' width='48' height='16' rx='8' fill='#1f2a37'/><rect x='52' y='20' width='16' height='9' rx='4' fill='#c0392b'/><circle cx='60' cy='46' r='6' fill='#3b4a5c'/><circle cx='60' cy='46' r='2.4' fill='#9fd0ff'/><g class='mnRot'><ellipse cx='12' cy='11' rx='16' ry='2.6' fill='#1f2a37' opacity='.75'/></g><g class='mnRot'><ellipse cx='108' cy='11' rx='16' ry='2.6' fill='#1f2a37' opacity='.75'/></g><line x1='46' y1='42' x2='40' y2='50' stroke='#1f2a37' stroke-width='2.4' stroke-linecap='round'/><line x1='74' y1='42' x2='80' y2='50' stroke='#1f2a37' stroke-width='2.4' stroke-linecap='round'/></svg></div><div class="dr d2"><svg viewBox='0 0 120 54' xmlns='http://www.w3.org/2000/svg'><g stroke='#1f2a37' stroke-width='3' stroke-linecap='round'><line x1='38' y1='30' x2='12' y2='14'/><line x1='82' y1='30' x2='108' y2='14'/></g><rect x='36' y='26' width='48' height='16' rx='8' fill='#1f2a37'/><rect x='52' y='20' width='16' height='9' rx='4' fill='#c0392b'/><circle cx='60' cy='46' r='6' fill='#3b4a5c'/><circle cx='60' cy='46' r='2.4' fill='#9fd0ff'/><g class='mnRot'><ellipse cx='12' cy='11' rx='16' ry='2.6' fill='#1f2a37' opacity='.75'/></g><g class='mnRot'><ellipse cx='108' cy='11' rx='16' ry='2.6' fill='#1f2a37' opacity='.75'/></g><line x1='46' y1='42' x2='40' y2='50' stroke='#1f2a37' stroke-width='2.4' stroke-linecap='round'/><line x1='74' y1='42' x2='80' y2='50' stroke='#1f2a37' stroke-width='2.4' stroke-linecap='round'/></svg></div></div>
   <div class="mnId"><img id="mnAv" class="av" alt="José Luis" src=""><b>José Luis Guerrero Marín</b></div>
   <div class="mnC">
     <div class="mnT"><i>▲</i>SANT·SIM</div>
